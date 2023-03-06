@@ -14,7 +14,6 @@ def connect():
         ssh_user = lines[3]
         key_path = lines[4]
         host_name = lines[5]
-        database = lines[6]
 
     # port forwarding
     server = SSHTunnelForwarder(
@@ -27,7 +26,7 @@ def connect():
     server.start()
 
     # connection to MySQL
-    con = pymysql.connect(user=user, passwd=pw, db=database, host='127.0.0.1', port=server.local_bind_port)
+    con = pymysql.connect(user=user, passwd=pw, host='127.0.0.1', port=server.local_bind_port)
 
     print("Connection Successful")
 
