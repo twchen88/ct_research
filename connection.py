@@ -6,7 +6,7 @@ import pymysql
 def connect():
 
     # load in credential file
-    with open("credentials.txt", "r") as f:
+    with open("misc/credentials.txt", "r") as f:
         lines = f.read().splitlines()
         user = lines[0]
         pw = lines[1]

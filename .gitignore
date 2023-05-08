@@ -1,5 +1,4 @@
-# ignore credential files
-credentials.txt
-
-# ignore cache
 __pycache__/
+misc/
+ct/
+data/
