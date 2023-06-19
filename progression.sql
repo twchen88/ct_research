@@ -1,0 +1,1 @@
+select * from constant_therapy.task_progression order by time_implemented;

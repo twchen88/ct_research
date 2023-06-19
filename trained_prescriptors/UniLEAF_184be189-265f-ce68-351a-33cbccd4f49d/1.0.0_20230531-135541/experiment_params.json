@@ -1,0 +1,128 @@
+{
+    "evolution": {
+        "fitness": [
+            {
+                "maximize": true,
+                "metric_name": "Survived"
+            }
+        ],
+        "nb_elites": 5,
+        "mutation_type": "gaussian_noise_percentage",
+        "nb_generations": 40,
+        "mutation_factor": 0.1,
+        "population_size": 10,
+        "parent_selection": "tournament",
+        "initialization_range": 1,
+        "mutation_probability": 0.1,
+        "remove_population_pct": 0.8,
+        "initialization_distribution": "orthogonal"
+    },
+    "network": {
+        "inputs": [
+            {
+                "name": "Age",
+                "size": 1,
+                "values": [
+                    "float"
+                ]
+            },
+            {
+                "name": "Sex",
+                "size": 2,
+                "values": [
+                    "female",
+                    "male"
+                ]
+            },
+            {
+                "name": "Fare",
+                "size": 1,
+                "values": [
+                    "float"
+                ]
+            },
+            {
+                "name": "Pclass",
+                "size": 1,
+                "values": [
+                    "float"
+                ]
+            }
+        ],
+        "outputs": [
+            {
+                "name": "Parch",
+                "size": 1,
+                "activation": "sigmoid",
+                "use_bias": true,
+                "values": [
+                    "float"
+                ]
+            },
+            {
+                "name": "SibSp",
+                "size": 1,
+                "activation": "sigmoid",
+                "use_bias": true,
+                "values": [
+                    "float"
+                ]
+            },
+            {
+                "name": "Cabin_n",
+                "size": 1,
+                "activation": "sigmoid",
+                "use_bias": true,
+                "values": [
+                    "float"
+                ]
+            },
+            {
+                "name": "Cabin_r",
+                "size": 9,
+                "activation": "softmax",
+                "use_bias": true,
+                "values": [
+                    "A",
+                    "B",
+                    "C",
+                    "D",
+                    "E",
+                    "F",
+                    "F G",
+                    "G",
+                    "T"
+                ]
+            },
+            {
+                "name": "Embarked",
+                "size": 3,
+                "activation": "softmax",
+                "use_bias": true,
+                "values": [
+                    "C",
+                    "Q",
+                    "S"
+                ]
+            }
+        ],
+        "hidden_layers": [
+            {
+                "layer_name": "hidden_1",
+                "layer_type": "Dense",
+                "layer_params": {
+                    "units": 16,
+                    "use_bias": true,
+                    "activation": "tanh"
+                }
+            }
+        ]
+    },
+    "LEAF": {
+        "representation": "NNWeights",
+        "experiment_id": "UniLEAF_184be189-265f-ce68-351a-33cbccd4f49d",
+        "version": "1.0.0",
+        "persistence_dir": "trained_prescriptors/",
+        "candidates_to_persist": "best"
+    }
+}

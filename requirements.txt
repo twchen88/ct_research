@@ -4,3 +4,4 @@ matplotlib
 seaborn
 sshtunnel
 pymysql
+scikit-learn
