@@ -1,5 +1,4 @@
--- table created in constant_therapy database as context_action_dis
-select sess.id, sess.patient_id, sess.task_type_id, sess.task_level, sess.completed_task_count, sess.accuracy, tp.domain_id, ps.condition_since, ps.birth_year, dis.disorder_id,
+select sess.id, sess.patient_id, sess.task_type_id, sess.task_level, sess.completed_task_count, sess.accuracy, sess.latency, tp.domain_id, ps.condition_since, ps.birth_year, dis.disorder_id,
 DATE(sess.start_time) AS start_time, sess.start_time AS start_time_min, DATE(sess.end_time) AS end_time, sess.end_time as end_time_min
 from constant_therapy.sessions sess
 join (
@@ -11,4 +10,4 @@ select user_id, id, condition_since, age_group, birth_year, usertype, created_da
 join (
 select customer_id, disorder_id from ct_customer.customers_to_disorders
 ) dis on dis.customer_id = ps.id
-where (sess.accuracy is not null) and (ps.condition_since is not null) and (ps.birth_year is not null) and (ps.birth_year <> 0) and (ps.usertype = "patient");
+where (sess.accuracy is not null) and (sess.latency is not null) and (ps.condition_since is not null) and (ps.birth_year is not null) and (ps.birth_year <> 0) and (ps.usertype = "patient");
