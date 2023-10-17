@@ -7,3 +7,5 @@ pymysql
 scikit-learn
 matplotlib-venn
 ipywidgets
+keras
+tensorflow
