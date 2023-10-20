@@ -2,3 +2,8 @@ __pycache__/
 misc/
 ct/
 data/
+bin/
+etc/
+include/
+lib/
+share/
