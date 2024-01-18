@@ -3,11 +3,11 @@ import numpy as np
 
 
 # missing_pct
-missing_pct = 0.05
-size = 500
+missing_pct = 0
+size = 5000
 
-f1 = np.random.rand(500, 1)
-f2 = np.random.rand(500, 1)
+f1 = np.random.rand(size, 1)
+f2 = np.random.rand(size, 1)
 
 indices = np.random.choice(np.arange(size), replace=False,
                            size=int(size * missing_pct))
@@ -21,4 +21,4 @@ f2[indices] = 0
 arr = np.hstack((f1, f2))
 
 df = pd.DataFrame(arr)
-df.to_csv("data/test_dataset.csv", index=False)
+df.to_csv("data/test_dataset_no_missing_2_5000.csv", index=False)
