@@ -10,3 +10,6 @@ share/
 wandb/
 model/
 artifacts/
+archive/
+pyvenv.cfg
+wandb/
