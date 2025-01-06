@@ -7,9 +7,9 @@ etc/
 include/
 lib/
 share/
-wandb/
 model/
 artifacts/
 archive/
 pyvenv.cfg
 wandb/
+.DS_Store
