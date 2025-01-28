@@ -389,12 +389,12 @@ print("plotting results")
 prediction, loss, mae = predict(model, train_data)
 plot_average_improvements("Ground Truth", "Train", train_data[target_columns].copy().to_numpy() * train_data[encoding_columns].copy().to_numpy(), train_data)
 plot_average_improvements("Prediction", "Train", prediction, train_data)
-records["Train"] = (loss.clone().cpu().numpy().tolist(), mae.clone().cpu().numpy().tolist())
+records["Train"] = (loss.tolist(), mae.tolist())
 
 prediction, loss, mae = predict(model, test_data)
 plot_average_improvements("Ground Truth", "Test", test_data[target_columns].copy().to_numpy() * test_data[encoding_columns].copy().to_numpy(), test_data)
 plot_average_improvements("Prediction", "Test", prediction, test_data)
-records["Test"] = (loss.clone().cpu().numpy().tolist(), mae.clone().cpu().numpy().tolist())
+records["Test"] = (loss.tolist(), mae.tolist())
 
 # save records in a json file
 with open(output_dir+"records.json", "w") as f:
