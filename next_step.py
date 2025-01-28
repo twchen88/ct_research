@@ -243,7 +243,7 @@ def train_model(x_train, x_val,y_train, y_val, epochs, model, optimizer, loss_fu
             optimizer.step()
             
             # Storing the losses in a list for plotting
-            epoch_loss.append(loss.item())
+            epoch_loss.append(loss.clone().cpu().item())
 
         losses.append(statistics.mean(epoch_loss))
 
@@ -254,7 +254,7 @@ def train_model(x_train, x_val,y_train, y_val, epochs, model, optimizer, loss_fu
             val_t = val_rs.clone().detach().type(torch.float32)
             answer = model(val_t)
             val_loss = loss_function(answer, y_val.reshape(answer.shape))
-        val_losses.append(val_loss)
+        val_losses.append(val_loss.clone().cpu())
     return losses, val_losses, history, model
 
 # return metrics from model training
@@ -334,7 +334,7 @@ def predict(model, data):
     with torch.no_grad():
         predictions = model(x)
         loss = loss_function(predictions, y.reshape(predictions.shape))    
-        return predictions, loss, torch.mean(torch.abs(predictions - y.reshape(predictions.shape)))
+        return predictions.clone().cpu().numpy(), loss.clone().cpu().item(), torch.mean(torch.abs(predictions - y.reshape(predictions.shape)).clone().cpu().item())
 
 
 ## main code
