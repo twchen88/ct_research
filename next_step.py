@@ -334,7 +334,7 @@ def predict(model, data):
     with torch.no_grad():
         predictions = model(x)
         loss = loss_function(predictions, y.reshape(predictions.shape))    
-        return predictions.clone().cpu().numpy(), loss.clone().cpu().item(), torch.mean(torch.abs(predictions - y.reshape(predictions.shape)).clone().cpu().item())
+        return predictions.clone().cpu().numpy(), loss.clone().cpu().item(), torch.mean(torch.abs(predictions - y.reshape(predictions.shape))).clone().cpu().item()
 
 
 ## main code
