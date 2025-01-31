@@ -26,14 +26,15 @@ def create_training_data(data: pd.DataFrame):
     session_row = [] # contents of a row (patient id, encoding, cur score, prev score, repeat)
     overall = [] # aggregate of everything (n sessions x 44)
 
-    cur_score = np.zeros((14)) # score for each session
+    cur_score = np.empty((14)) # score for each session
+    cur_score.fill(np.nan)
     prev_score = None
 
     seen = {} # dictionary for seen
     patient_id = data["patient_id"].iloc[0] # save patient_id
 
     # Sort data by session start time
-    data = data.sort_values(by=["start_time_min"])
+    data = data.sort_values(by=["start_time"])
 
     # Process each row
     for idx, row in data.iterrows():
@@ -115,7 +116,7 @@ def create_missing_indicator(data):
         for d in range(w):
             p = data[i, d]
             # update output array
-            if p == 0:
+            if np.isnan(p):
                 missing_ind = np.random.choice(2, 1)[0]
                 temp[i, d*2] = missing_ind
                 temp[i, d*2+1] = missing_ind
@@ -129,8 +130,8 @@ def data_process(filename : str, n_samples : int):
     # read in filtered sessions data
     df = pd.read_csv(filename)
     # sort dataframe by start_time_min
-    df["start_time_min"] = df["start_time_min"].astype('datetime64[ns]')
-    df = df.sort_values(by=["patient_id", "start_time_min"])
+    df["start_time"] = df["start_time"].astype('datetime64[ns]')
+    df = df.sort_values(by=["patient_id", "start_time"])
     # create training data using df
     data = df.groupby("patient_id")[df.columns].apply(create_training_data).reset_index(drop=True)
     train_data, test_data = train_test_split(data, test_size=0.25, random_state=42)
@@ -221,7 +222,7 @@ def train_model(x_train, x_val,y_train, y_val, epochs, model, optimizer, loss_fu
     data_loader = DataLoader(data_set, batch_size=batch_size, shuffle=True)
 
     for epoch in range(epochs):
-        if epoch % 1000 == 0: print("epoch %d" % epoch)
+        if epoch % 100 == 0: print("epoch %d" % epoch)
         epoch_loss = []
         ## training
         model.train()
@@ -336,17 +337,24 @@ def predict(model, data):
         loss = loss_function(predictions, y.reshape(predictions.shape))    
         return predictions.clone().cpu().numpy(), loss.clone().cpu().item(), torch.mean(torch.abs(predictions - y.reshape(predictions.shape))).clone().cpu().item()
 
+def jsonify(n_sample, learning_rate, n_epoch, batch_size):
+    output = dict()
+    output["n_sample"] = n_sample
+    output["learning_rate"] = learning_rate
+    output["n_epoch"] = n_epoch
+    output["batch_size"] = batch_size
+    return output
+
 
 ## main code
 print("set up")
 # process system arguments and set global variables
-output_dir = sys.argv[1]
-data_source = "data/filtered_ds.csv"
+data_source = "data/filtered_model_data.csv"
 # grid search hyper parameters
-n_samples = 10
-learning_rate = 1e-3
-n_epochs = int(1e2)
-batch_sizes = int(1)
+n_samples = [250000]
+learning_rates = [1e-3]
+n_epochs = [1500]
+batch_sizes = [int(1e3)]
 # Validation using MSE Loss function
 loss_function = torch.nn.MSELoss()
 # column names
@@ -354,8 +362,6 @@ score_columns = ["domain %d score" %i for i in range(1, 15)]
 encoding_columns = ["domain %d encoding" %i for i in range(1, 15)]
 target_columns = ["domain %d target" %i for i in range(1, 15)]
 repeat_columns = ["repeat"]
-# model records
-records = dict()
 
 # initialize random seed and cuda device
 # Set seeds for reproducibility
@@ -374,33 +380,43 @@ if torch.cuda.is_available():
 else:
     raise Exception("No GPU Available")
 
-# create output directory to store this run's results
-try:
-    os.mkdir(output_dir)
-except Exception as e:
-    print("Error occurred creating directory")
+run_counter = 7 # initialize run_counter
+## grid search
+for n_sample in n_samples:
+    for learning_rate in learning_rates:
+        for n_epoch in n_epochs:
+            for batch_size in batch_sizes:
+                # output directory name
+                output_dir = "output/experiment%d/" % run_counter
+                # create output directory to store this run's results
+                try:
+                    os.mkdir(output_dir)
+                except Exception as e:
+                    print("Error occurred creating directory")
+                # initialize model records
+                records = dict()
+                print("experiment %d start" % run_counter)
+                train_data, test_data = data_process(data_source, n_sample)
+                model, model_history = train(learning_rate, n_epoch, batch_size, train_data)
 
-print("data processing")
-train_data, test_data = data_process(data_source, n_samples)
-print("training model")
-model, model_history = train(learning_rate, n_epochs, batch_sizes, train_data)
+                prediction, loss, mae = predict(model, train_data)
+                plot_average_improvements("Ground Truth", "Train", train_data[target_columns].copy().to_numpy() * train_data[encoding_columns].copy().to_numpy(), train_data)
+                plot_average_improvements("Prediction", "Train", prediction, train_data)
+                records["Train"] = (loss, mae)
 
-print("plotting results")
-prediction, loss, mae = predict(model, train_data)
-plot_average_improvements("Ground Truth", "Train", train_data[target_columns].copy().to_numpy() * train_data[encoding_columns].copy().to_numpy(), train_data)
-plot_average_improvements("Prediction", "Train", prediction, train_data)
-records["Train"] = (loss.tolist(), mae.tolist())
+                prediction, loss, mae = predict(model, test_data)
+                plot_average_improvements("Ground Truth", "Test", test_data[target_columns].copy().to_numpy() * test_data[encoding_columns].copy().to_numpy(), test_data)
+                plot_average_improvements("Prediction", "Test", prediction, test_data)
+                records["Test"] = (loss, mae)
 
-prediction, loss, mae = predict(model, test_data)
-plot_average_improvements("Ground Truth", "Test", test_data[target_columns].copy().to_numpy() * test_data[encoding_columns].copy().to_numpy(), test_data)
-plot_average_improvements("Prediction", "Test", prediction, test_data)
-records["Test"] = (loss.tolist(), mae.tolist())
+                # save records in a json file
+                with open(output_dir + "records.json", "w") as f:
+                    json.dump(records, f)
+                # save model
+                torch.save(model, output_dir + "model.pt")
+                # save hyperparameters in a json file
+                with open(output_dir + "hyperparams.json", "w") as f:
+                    json.dump(jsonify(n_sample, learning_rate, n_epoch, batch_size), f)
 
-# save records in a json file
-with open(output_dir+"records.json", "w") as f:
-    json.dump(records, f)
-# save model history in a json file
-with open(output_dir+"history.json", "w") as f:
-    json.dump(model_history, f)
-
-print("done")
+                print("experiment %d done" % run_counter)
+                run_counter += 1 #increment run_counter by 1 once the run is done
