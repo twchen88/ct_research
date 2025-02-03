@@ -145,14 +145,17 @@ def data_process(filename : str, n_samples : int):
 # given a processed dataframe, return data and target tensors that can be put in the model
 def create_model_data(data : pd.DataFrame):
     target = data[target_columns].copy().to_numpy() * data[encoding_columns].copy().to_numpy()
+    target = np.nan_to_num(target, nan=0)
     data_scores = create_missing_indicator(data[score_columns].copy().to_numpy())
     final_data = np.hstack((data[encoding_columns].copy().to_numpy(), data_scores))
     return torch.from_numpy(final_data).float().to(device), torch.from_numpy(target).float().to(device)
 
 # plot average improvement plots and store, d_type= Ground Truth or Prediction, mode=train or test, cur_score=whatever we need, data=test or train data
 def plot_average_improvements(d_type, mode, cur_score, data):
+    cur_score = np.nan_to_num(cur_score, nan=0)
+    prev_score = np.nan_to_num(data[score_columns].copy().to_numpy(), nan=0)
     # Step 1: Compute differences
-    differences = cur_score - data[score_columns].copy().to_numpy()
+    differences = cur_score - prev_score
     # Step 2: Mask the differences using the encoding array
     masked_differences = np.where(data[encoding_columns].copy().to_numpy() == 1, differences, 0)  # Retain differences only where encoding is 1
     # Step 3: Compute the column-wise sum and count
@@ -352,10 +355,10 @@ print("set up")
 # process system arguments and set global variables
 data_source = "data/filtered_model_data.csv"
 # grid search hyper parameters
-n_samples = [1000]
+n_samples = [100000]
 learning_rates = [1e-3]
-n_epochs = [100]
-batch_sizes = [int(1e3)]
+n_epochs = [1000]
+batch_sizes = [int(1e4)]
 # Validation using MSE Loss function
 loss_function = torch.nn.MSELoss()
 # column names
@@ -381,7 +384,7 @@ if torch.cuda.is_available():
 else:
     raise Exception("No GPU Available")
 
-run_counter = 8 # initialize run_counter
+run_counter = 9 # initialize run_counter
 ## grid search
 for n_sample in n_samples:
     for learning_rate in learning_rates:
