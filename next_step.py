@@ -123,6 +123,7 @@ def create_missing_indicator(data):
             else:
                 temp[i, d*2] = p # score
                 temp[i, d*2+1] = 1-p # 1-score
+    assert not np.isnan(temp).any(), "nans exists!!!"
     return copy.deepcopy(temp)
 
 # process data, takes in filename that contains the data we are using and number of samples we want to use this run, returns train and test dataframes
@@ -351,9 +352,9 @@ print("set up")
 # process system arguments and set global variables
 data_source = "data/filtered_model_data.csv"
 # grid search hyper parameters
-n_samples = [250000]
+n_samples = [1000]
 learning_rates = [1e-3]
-n_epochs = [1500]
+n_epochs = [100]
 batch_sizes = [int(1e3)]
 # Validation using MSE Loss function
 loss_function = torch.nn.MSELoss()
@@ -380,7 +381,7 @@ if torch.cuda.is_available():
 else:
     raise Exception("No GPU Available")
 
-run_counter = 7 # initialize run_counter
+run_counter = 8 # initialize run_counter
 ## grid search
 for n_sample in n_samples:
     for learning_rate in learning_rates:
