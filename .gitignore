@@ -14,4 +14,5 @@ v1/.DS_Store
 v2/__pycache__/
 v2/.pytest_cache/
 v2/data/
+v2/sql/
 v2/config/connection/

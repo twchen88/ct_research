@@ -10,7 +10,7 @@
 ### v2/
 - Refactored and documented from v1 code
 - Thoroughly debugged after dissertation proposal
-- Uses modular code, config files, DVC
+- Uses modular code, config files, metadata files
 - See `v2/provenance_log.md`
 
 ### v3/
