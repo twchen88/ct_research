@@ -1,4 +1,5 @@
-# main directory
+# main directory/all
+**/__pycache__/
 .DS_Store
 
 # v1
@@ -11,5 +12,6 @@ v1/.DS_Store
 
 # v2
 v2/__pycache__/
+v2/.pytest_cache/
 v2/data/
-#TODO: add sensitive files
+v2/config/connection/

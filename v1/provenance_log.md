@@ -31,10 +31,10 @@ This file documents the origin, purpose, and status of experimental files and da
 - **Purpose**: implement Gaussian Process that predicts probability that 
 
 ### `outcome.ipynb`
-- **Purpose**: looks at score trends and
+- **Purpose**: looks at score trends
 
 ### `prediction.ipynb`
-- **Purpose**: 
+- **Purpose**: preliminary prediction task attempt, looks mostly abandoned
 
 ### `test_dataset_generator.py`
 - **Purpose**: create artificial datasets that are random so that it is easy to test experimental code

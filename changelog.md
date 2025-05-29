@@ -8,10 +8,14 @@
 - See `v1/provenance_log.md`
 
 ### v2/
-- Refactored, documented, and dissertation-proposal-ready
+- Refactored and documented from v1 code
+- Thoroughly debugged after dissertation proposal
 - Uses modular code, config files, DVC
 - See `v2/provenance_log.md`
 
+### v3/
+- Added proposed work and experiments from dissertation proposal
+- See `v3/provenance_log.md`
 ---
 
 ## Major Transitions
