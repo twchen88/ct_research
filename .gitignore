@@ -1,6 +1,6 @@
 # main directory/all
 **/__pycache__/
-.DS_Store
+**/.DS_Store
 
 # v1
 v1/__pycache__/
@@ -11,7 +11,6 @@ v1/artifacts/
 v1/.DS_Store
 
 # v2
-v2/__pycache__/
 v2/.pytest_cache/
 v2/data/
 v2/sql/
