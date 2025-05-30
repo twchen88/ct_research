@@ -5,12 +5,12 @@ import pandas as pd
 from sshtunnel import SSHTunnelForwarder
 from datetime import datetime
 
-import src.utils.load_config as load_config
+import src.utils.config_loading as config_loading
 
 # takes in the file name of the file that contains credentials and connection information, returns a connection object
 def connect(filename):
     # load in credential file
-    config_dict = load_config.load_json_config(filename)
+    config_dict = config_loading.load_json_config(filename)
     print("Connecting to database...")
 
     ssh_address = config_dict["ssh_address"]

@@ -28,31 +28,15 @@ if __name__ == "__main__":
 
     ## load SQL query results from SQL file
     print("Loading SQL query results...")
-    try:
-        data = db_utils.load_sql(config["source"]["sql_file_path"], con)
-        print("SQL query results loaded successfully.")
-    except Exception as e:
-        print(f"Error loading SQL query: {e}")
+    data = db_utils.load_sql(config["source"]["sql_file_path"], con)
 
     ## save the query results to a CSV file
     output_data_file_path = config["output"]["dest"] + config["output"]["filename"]
     print(f"Saving query results to {output_data_file_path}...")
-    try:
-        data_io.write_sessions_to_csv(output_data_file_path, data)
-        print("Query results saved successfully.")
-    except Exception as e:
-        print(f"Error saving query results: {e}")
+    data_io.write_sessions_to_csv(output_data_file_path, data)
 
     ## save metadata about the output file and configuration used to generate it
-    try:
-        db_utils.save_metadata(output_data_file_path, args.config, config)
-        print("Metadata saved successfully.")
-    except Exception as e:
-        print(f"Error saving metadata: {e}")
+    db_utils.save_metadata(output_data_file_path, args.config, config)
 
     ## close the database connection
-    try:
-        con.close()
-        print("Database connection closed.")
-    except Exception as e:
-        print(f"Error closing the database connection: {e}")
+    con.close()

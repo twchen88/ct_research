@@ -5,5 +5,5 @@ source:
   sql_params: config/connection/constant_therapy_config.json
 # data destination
 output:
-  dest: data/raw_data/
+  dest: data/raw/
   filename: predictor_data_20250529.csv
