@@ -10,3 +10,8 @@ def read_raw_session_file(file_name):
 def write_sessions_to_csv(file_name, df):
     df.to_csv(file_name, index=False)
     print(f"Dataframe written to {file_name}")
+
+
+## take in a string of file name of a CSV file and returns a dataframe
+def read_preprocessed_session_file(file_name):
+    return pd.read_csv(file_name, low_memory=False)
