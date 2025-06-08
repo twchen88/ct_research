@@ -5,7 +5,8 @@ This file documents the origin, purpose, and status of source code, notebooks, a
 If dates are included in file names, it must be the date when the file is USED (when data is stored, processed, modified, etc), not when the config file is created.
 
 ---
-## top-level scripts
+## top-level scripts and files
+### scripts
 **`00_pull_data.py`**: Takes in an SQL query (specified in config file in config/pull/), pulls the data, and stores data in data/raw_data/.
 - `python 00_pull_data.py --config config/pull/[YYYYMMDD].yaml`
 
@@ -17,6 +18,8 @@ If dates are included in file names, it must be the date when the file is USED (
 **`04_assess_accuracy_repeat.py`**
 **`05_assess_accuracy_nonrepeat.py`**
 **`06_run_trajectory_experiment.py`**
+### files
+- workflow.md describes the workflow from scripts to file
 
 ## config/
 
