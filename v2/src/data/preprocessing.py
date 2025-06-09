@@ -6,12 +6,12 @@ from datetime import datetime
 from sklearn.cluster import DBSCAN
 
 # drop duplicates based on specific columns (default to None)
-def drop_duplicates(df, based_on=None):
+def drop_duplicates(df : pd.DataFrame, based_on : list) -> pd.DataFrame:
     df = df.drop_duplicates(subset=based_on, keep='first')
     return df
 
 # given a dataframe, turn start time to a datetime format and sort by start time, return the sorted dataframe
-def sort_by_start_time(df):
+def sort_by_start_time(df : pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df['start_time'] = pd.to_datetime(df['start_time'])
     df = df.sort_values(by='start_time').reset_index(drop=True)
@@ -19,7 +19,7 @@ def sort_by_start_time(df):
 
 # given a dataframe of all considered sessions, for each patient, find usage frequency in terms of unique days,
 # return a dataframe with patient_id, session count, and unique days
-def find_usage_frequency(df):
+def find_usage_frequency(df : pd.DataFrame) -> pd.DataFrame:
     df = sort_by_start_time(df).copy()          # keep original intact
     df["start_date"] = df["start_time"].dt.date # strip time for distinct-day count
     # 1) distinct active days per patient
@@ -35,14 +35,14 @@ def find_usage_frequency(df):
 # given a session, take domain_ids and domain_scores, which are in string format separated by ",", 
 # and replace with a list of the values
 # used with extract_session_data()
-def process_row(row):
+def process_row(row : pd.Series) -> tuple:
     values_a = [int(x.strip()) for x in str(row['domain_ids']).split(',')]
     values_b = [float(x.strip()) for x in str(row['domain_scores']).split(',')]
     return values_a, values_b
 
 # Given a dataframe that contains sessions for a single patient, for each session/row, find most updated domain scores for all 14 domains,
 # keep previous scores, and encode domains as a binary vector. At the end, return a dataframe with these information.
-def extract_session_data(data: pd.DataFrame):
+def extract_session_data(data: pd.DataFrame) -> pd.DataFrame:
     # Initialize variables
     session_row = [] # contents of a row (patient id, encoding, cur score, prev score...)
     overall = [] # aggregate of everything (n sessions x 45)
@@ -97,7 +97,7 @@ def extract_session_data(data: pd.DataFrame):
     return scores_df
 
 # filter out session gaps, V1 uses DBSCAN clustering to find outliers in datetime data (copied from commit 9f8d808)
-def filter_datetime_outliers(data, eps_days, min_samples):
+def filter_datetime_outliers(data : pd.DataFrame, eps_days : int, min_samples : int) -> pd.DataFrame:
     df = data.copy()
 
     # Convert dates to numerical timestamps
@@ -117,7 +117,7 @@ def filter_datetime_outliers(data, eps_days, min_samples):
     return filtered_df
 
 # save metadata about the output file and configuration used to generate it
-def save_metadata(input_path, output_path, config_path, config, stats):
+def save_metadata(input_path : str, output_path : str, config_path : str, config : dict, stats : dict) -> None:
     metadata = {
         "input_file": input_path,
         "output_file": output_path,
