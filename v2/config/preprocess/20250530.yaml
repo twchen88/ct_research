@@ -1,3 +1,5 @@
+### Purpose: Test out preprocessing pipeline without filter_datetime functionality.
+
 # the parameters for filtering
 filter_params:
   usage_frequency: 0.10

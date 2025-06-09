@@ -1,3 +1,5 @@
+### Purpose: Pull raw data according to SQL query for predictor model. SQL query is defined in a separate file and written during v1 development.
+
 # data source
 source:
   type: database
