@@ -20,6 +20,7 @@ if __name__ == "__main__":
     print(f"SQL File Path: {config['source']['sql_file_path']}")
 
     ## establish connection to the database
+    con = None
     try:
         con = db_utils.connect(config["source"]["sql_params"])
         print("Connection established.")
@@ -28,6 +29,8 @@ if __name__ == "__main__":
 
     ## load SQL query results from SQL file
     print("Loading SQL query results...")
+    if con is None:
+        raise Exception("Database connection could not be established. Exiting.")
     data = db_utils.load_sql(config["source"]["sql_file_path"], con)
 
     ## save the query results to a CSV file
@@ -39,4 +42,10 @@ if __name__ == "__main__":
     db_utils.save_metadata(output_data_file_path, args.config, config)
 
     ## close the database connection
-    con.close()
+    try:
+        if con is not None:
+            con.close()
+            print("Connection closed.")
+    except Exception as e:
+        print(f"Error closing the database connection: {e}")
+    print("Data pull completed successfully.")
