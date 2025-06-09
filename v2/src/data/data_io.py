@@ -1,13 +1,34 @@
 ### File I/O utilities for reading and writing data files
 import pandas as pd
+import numpy as np
 
 
-## take in a string of file name of a CSV file and a dataframe, writes the dataframe to the CSV file
+## Write functions
 def write_sessions_to_csv(file_name : str, df : pd.DataFrame) -> None:
+    """
+    Writes a DataFrame to a CSV file.
+    Parameters:
+        file_name (str): The name of the file to write to.
+        df (pd.DataFrame): The DataFrame to write.
+    """
     df.to_csv(file_name, index=False)
     print(f"Dataframe written to {file_name}")
 
 
+def write_sessions_to_npy(file_name: str, data: np.ndarray) -> None:
+    """
+    Writes a numpy array to a .npy file.
+
+    Parameters:
+        file_name (str): The name of the file to write to.
+        data (np.ndarray): The numpy array to write.
+    """
+    np.save(file_name, data)
+    print(f"Numpy array written to {file_name}")
+
+
+
+## Read functions
 def read_raw_session_chunks(file_name: str, chunksize: int = 500_000):
     dtype_map = {
         'id': 'int32',
@@ -33,3 +54,5 @@ def read_preprocessed_session_file(file_name : str) -> pd.DataFrame:
     'time_stamp': 'int64',  # assuming it's UNIX time
     }
     return pd.read_csv(file_name, dtype=dtype_map, low_memory=False)
+
+# def read_encoded_
