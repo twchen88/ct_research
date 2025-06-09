@@ -54,6 +54,9 @@ def extract_session_data(data: pd.DataFrame):
 
     patient_id = data["patient_id"].iloc[0] # store patient id for the dataframe
 
+    # sort by start time
+    data = sort_by_start_time(data)
+
     # iterate through each row
     for _, row in data.iterrows():
         domains, domain_scores = process_row(row)  # returns a list of domains : int and of domain_scores : float
@@ -93,42 +96,25 @@ def extract_session_data(data: pd.DataFrame):
     scores_df.reset_index(drop=True, inplace=True)
     return scores_df
 
-# filter out session gaps
-def filter_datetime_outliers(data, column="start_time", eps_days=14, min_samples=5):
-
+# filter out session gaps, V1 uses DBSCAN clustering to find outliers in datetime data (copied from commit 9f8d808)
+def filter_datetime_outliers(data, eps_days, min_samples):
     df = data.copy()
 
-    # Convert datetime column to date only (removing time)
-    df["date"] = df[column].dt.date
+    # Convert dates to numerical timestamps
+    df['start_time'] = pd.to_datetime(df['start_time'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+    df["timestamp"] = df['start_time'].astype(np.int64) // 10**9  # Convert to seconds
 
-    # Get unique days as a DataFrame
-    unique_dates = pd.DataFrame(df["date"].unique(), columns=["date"])
-
-    # Convert unique dates to numerical timestamps (days since epoch)
-    unique_dates["timestamp"] = pd.to_datetime(unique_dates["date"]).astype(np.int64) // 10**9
-
-    # Apply DBSCAN clustering on unique dates
+    # Apply DBSCAN clustering
     eps_seconds = eps_days * 24 * 60 * 60  # Convert days to seconds
-    clustering = DBSCAN(eps=eps_seconds, min_samples=min_samples).fit(unique_dates[["timestamp"]])
-
+    clustering = DBSCAN(eps=eps_seconds, min_samples=min_samples).fit(df[["timestamp"]])
+    
     # Assign cluster labels
-    unique_dates["cluster"] = clustering.labels_
+    df["cluster"] = clustering.labels_
 
-    # Keep only clustered dates
-    clustered_dates = unique_dates[unique_dates["cluster"] != -1]["date"]
-
-    # Filter original DataFrame to keep only records from clustered dates
-    filtered_df = df[df["date"].isin(clustered_dates)].drop(columns=["date"])
+    # Remove outliers (DBSCAN labels outliers as -1)
+    filtered_df = df[df["cluster"] != -1].drop(columns=["timestamp", "cluster"])
 
     return filtered_df
-
-# modified from https://stackoverflow.com/questions/56750841/how-to-trim-outliers-in-dates-in-python
-def datetime_outlier(data):
-    qa = data["start_time"].quantile(0.2) #lower 10%
-    qb = data["start_time"] #higher 10%
-    #remove outliers
-    xf = data[(data.start_time >= qa) & (data.start_time <= qb)]
-    return xf
 
 # save metadata about the output file and configuration used to generate it
 def save_metadata(input_path, output_path, config_path, config, stats):
