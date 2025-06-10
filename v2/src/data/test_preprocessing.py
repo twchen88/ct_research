@@ -133,24 +133,24 @@ def test_extract_session_data():
     assert session_data.columns.tolist() == expected_cols
 
     ## check some values
-    session_data.iloc[0]["domain 3 encoding"] == 1
-    session_data.iloc[0]["domain 3 score"] == np.NaN
-    session_data.iloc[0]["domain 3 target"] == 0.79
-    session_data.iloc[0]["domain 6 score"] == 0.64
-    session_data.iloc[0]["domain 6 encoding"] == 0
+    assert session_data.iloc[0]["domain 3 encoding"] == 1
+    assert session_data.iloc[0]["domain 3 score"] == np.nan
+    assert session_data.iloc[0]["domain 3 target"] == 0.79
+    assert session_data.iloc[0]["domain 6 score"] == 0.64
+    assert session_data.iloc[0]["domain 6 encoding"] == 0
 
-    session_data.iloc[2]["domain 3 score"] == 0.79
-    session_data.iloc[2]["domain 3 encoding"] == 0
-    session_data.iloc[2]["domain 1 encoding"] == 1
+    assert session_data.iloc[2]["domain 3 score"] == 0.79
+    assert session_data.iloc[2]["domain 3 encoding"] == 0
+    assert session_data.iloc[2]["domain 1 encoding"] == 1
 
-    session_data.iloc[13]["domain 1 encoding"] == 1
-    session_data.iloc[13]["domain 1 target"] == 0.82
-    session_data.iloc[13]["domain 1 score"] == 0.36
+    assert session_data.iloc[13]["domain 1 encoding"] == 1
+    assert session_data.iloc[13]["domain 1 target"] == 0.82
+    assert session_data.iloc[13]["domain 1 score"] == 0.36
 
-    session_data.iloc[14]["domain 2 score"] == 0.92
-    session_data.iloc[14]["domain 5 score"] == 0.37
-    session_data.iloc[14]["domain 6 score"] == 0.69
-    session_data.iloc[14]["start_time"] == '2025-05-02 05:00:00'
+    assert session_data.iloc[14]["domain 2 score"] == 0.92
+    assert session_data.iloc[14]["domain 5 score"] == 0.37
+    assert session_data.iloc[14]["domain 6 score"] == 0.69
+    assert session_data.iloc[14]["start_time"] == '2025-05-02 05:00:00'
 
     # check that patient_id is preserved and that the returned dataframe is in order of patient_id
     assert session_data["patient_id"].iloc[0] == 1
