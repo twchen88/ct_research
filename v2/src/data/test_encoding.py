@@ -1,11 +1,11 @@
 import numpy as np
-from src.data.encoding import create_missing_indicator
+import src.data.encoding as encoding
 
 
 def test_create_missing_indicator():
     # Test with a simple case
     data = np.array([[0.3, 0.5, np.nan], [np.nan, 0.1, 0.2]])
-    encoded = create_missing_indicator(data, rand_seed=42)
+    encoded = encoding.create_missing_indicator(data, rand_seed=42)
     
     expected_shape = (2, 6)  # Each value becomes two columns
     assert encoded.shape == expected_shape
@@ -27,3 +27,15 @@ def test_create_missing_indicator():
     assert encoded[1, 0] == 0 or encoded[1, 0] == 1
     assert encoded[1, 1] == 0 or encoded[1, 1] == 1
     assert encoded[1, 0] == encoded[1, 1]
+
+
+def test_encode_target_data():
+    # Test with a simple case
+    target = np.array([[0.5, 0.2, 0.8], [0.1, 0.4, 0.6]])
+    encoded_domains = np.array([[1, 0, 0,], [0, 1, 0]])
+    
+    encoded_target = encoding.encode_target_data(target, encoded_domains)
+    
+    expected_target = np.array([[0.5, 0, 0], [0., 0.4, 0.]])
+    
+    assert np.array_equal(encoded_target, expected_target)

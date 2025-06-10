@@ -57,6 +57,23 @@ def create_missing_indicator(data: np.ndarray, rand_seed: int = 42) -> np.ndarra
 
     return encoded.copy()
 
+
+def encode_target_data(target: np.ndarray, encoded_domains: np.ndarray) -> np.ndarray:
+    """
+    Encodes target data by replacing non-target values with 0s and target values with target score.
+    - if encoding is 0, then target is 0
+    - if encoding is 1, then target is target score
+
+    Parameters:
+        data (np.ndarray): 2D array of floats with possible NaNs.
+        rand_seed (int): Seed for reproducibility.
+
+    Returns:
+        np.ndarray: 2D array with encoded values.
+    """
+    return np.multiply(target, encoded_domains)
+
+
 def save_metadata(input_path: str, output_path: str, config_path: str, column_names: list) -> None:
     """
     Saves metadata about the output file and configuration used to generate it.

@@ -44,6 +44,13 @@ if __name__ == "__main__":
     print("Encoding data with missing value indicator...")
     encoded_data = encoding.create_missing_indicator(df[score_columns].to_numpy(), rand_seed=42)
 
+    # Encode target data
+    print("Encoding target data...")
+    encoded_target = encoding.encode_target_data(
+        df[target_columns].to_numpy(),
+        df[encoding_columns].to_numpy()
+    )
+
     # Combine with remaining data
     print("Combining encoded data with encoding and target columns...")
     encoded_data = np.hstack((
