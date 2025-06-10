@@ -69,10 +69,10 @@ def extract_session_data(data: pd.DataFrame) -> pd.DataFrame:
         domain_encoding = np.isin(np.arange(1, 15), domains, assume_unique=True).astype(int)
         
         # append everything to the row list
-        session_row.append(patient_id)
-        session_row.extend(domain_encoding.copy().tolist())
-        session_row.extend(prev_score.copy().tolist())
-        session_row.extend(cur_score.copy().tolist())
+        session_row.append(patient_id) # patient id
+        session_row.extend(domain_encoding.copy().tolist()) # encoding columns
+        session_row.extend(prev_score.copy().tolist()) # socre columns
+        session_row.extend(cur_score.copy().tolist()) # target columns
         session_row.append(row["start_time"])
         session_row.append(row["start_time"].timestamp())
 
