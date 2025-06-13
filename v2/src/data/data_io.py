@@ -1,6 +1,14 @@
-### File I/O utilities for reading and writing data files
 import pandas as pd
 import numpy as np
+
+"""
+src/data/dat_io.py
+-----------------
+This module contains functions for reading and wrting data files, specifically for session data in CSV and numpy formats.
+It is separated into two main sections: write functions and read functions.
+* Write functions handle writing DataFrames to CSV files and numpy arrays to .npy files.
+* Read functions handle reading CSV files regularly or in chunks, specifying dtypes to reduce memory usage if needed.
+"""
 
 
 ## Write functions
@@ -30,6 +38,14 @@ def write_sessions_to_npy(file_name: str, data: np.ndarray) -> None:
 
 ## Read functions
 def read_raw_session_chunks(file_name: str, chunksize: int = 500_000):
+    """
+    Reads a CSV file in chunks and yields each chunk as a DataFrame.
+    Parameters:
+        file_name (str): The name of the CSV file to read.
+        chunksize (int): The number of rows per chunk. Default is 500,000.
+    Yields:
+        pd.DataFrame: A chunk of the DataFrame read from the CSV file.
+    """
     dtype_map = {
         'id': 'int32',
         'patient_id': 'int32',
@@ -39,13 +55,20 @@ def read_raw_session_chunks(file_name: str, chunksize: int = 500_000):
         'domain_scores': 'string'
     }
 
-    for chunk in pd.read_csv(file_name, dtype=dtype_map, low_memory=False, chunksize=chunksize):
+    for chunk in pd.read_csv(file_name, dtype=dtype_map, low_memory=False, chunksize=chunksize): # type: ignore
         chunk['start_time'] = pd.to_datetime(chunk['start_time'], errors='coerce')
         yield chunk
 
 
 ## take in a string of file name of a CSV file and returns a dataframe
-def read_preprocessed_session_file(file_name : str) -> pd.DataFrame:
+def read_preprocessed_session_file(file_name: str) -> pd.DataFrame:
+    """
+    Reads a preprocessed session CSV file into a DataFrame, with specified dtypes to reduce memory usage.
+    Parameters:
+        file_name (str): The name of the CSV file to read.
+    Returns:
+        pd.DataFrame: The DataFrame containing the session data.
+    """
     dtype_map = {
     'patient_id': 'int32',
     **{f'domain {i} encoding': 'int8' for i in range(1, 15)},
@@ -53,6 +76,4 @@ def read_preprocessed_session_file(file_name : str) -> pd.DataFrame:
     **{f'domain {i} target': 'float32' for i in range(1, 15)},
     'time_stamp': 'int64',  # assuming it's UNIX time
     }
-    return pd.read_csv(file_name, dtype=dtype_map, low_memory=False)
-
-# def read_encoded_
+    return pd.read_csv(file_name, dtype=dtype_map, low_memory=False) # type: ignore

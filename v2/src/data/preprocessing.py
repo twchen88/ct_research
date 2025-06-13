@@ -5,21 +5,61 @@ import numpy as np
 from datetime import datetime
 from sklearn.cluster import DBSCAN
 
-# drop duplicates based on specific columns (default to None)
+"""
+src/data/preprocessing.py
+-----------------
+This module contains functions for preprocessing data, including dropping duplicates, finding usage frequency and time for filtering purposes,
+and filtering outliers in datetime data.
+* drop_duplicates: Drops duplicate rows based on specified columns.
+* sort_by_start_time: Converts start time to datetime format and sorts the DataFrame by start time.
+* find_usage_frequency: Calculates usage frequency for each patient based on unique days and session count.
+* extract_session_data: Processes session data to extract domain scores and encodings in vectorized form.
+* filter_datetime_outliers: Filters outliers in datetime data using DBSCAN clustering.
+* save_metadata: Saves metadata about the output file and configuration used to generate it.
+"""
+
+
 def drop_duplicates(df : pd.DataFrame, based_on : list) -> pd.DataFrame:
+    """
+    Drop duplicate rows in a DataFrame based on specified columns, keeping the first appearance.
+
+    Parameters:
+        df (pd.DataFrame): The DataFrame to process.
+        based_on (list): List of column names to consider for identifying duplicates.
+
+    Returns:
+        pd.DataFrame: DataFrame with duplicates dropped, keeping the first occurrence.
+    """
     df = df.drop_duplicates(subset=based_on, keep='first')
     return df
 
-# given a dataframe, turn start time to a datetime format and sort by start time, return the sorted dataframe
+
 def sort_by_start_time(df : pd.DataFrame) -> pd.DataFrame:
+    """
+    Given a dataframe, sort by start time, return the sorted dataframe.
+
+    Parameters:
+        df (pd.DataFrame): The DataFrame to process.
+    
+    Returns:
+        pd.DataFrame: DataFrame sorted by start time.
+    """
     df = df.copy()
-    df['start_time'] = pd.to_datetime(df['start_time'])
     df = df.sort_values(by='start_time').reset_index(drop=True)
     return df
 
-# given a dataframe of all considered sessions, for each patient, find usage frequency in terms of unique days,
-# return a dataframe with patient_id, session count, and unique days
+
 def find_usage_frequency(df : pd.DataFrame) -> pd.DataFrame:
+    """
+    Given a dataframe of all considered sessions, for each patient, find usage frequency in terms of unique days, 
+    return a dataframe with patient_id, usage_time, and unique_days.
+
+    Parameters:
+        df (pd.DataFrame): The DataFrame containing session data with 'patient_id' and 'start_time' columns.
+
+    Returns:
+        pd.DataFrame: DataFrame with 'patient_id', 'usage_time', 'unique_days', and 'usage_freq'.
+    """
     df = sort_by_start_time(df).copy()          # keep original intact
     df["start_date"] = df["start_time"].dt.date # strip time for distinct-day count
     # 1) distinct active days per patient
@@ -32,17 +72,35 @@ def find_usage_frequency(df : pd.DataFrame) -> pd.DataFrame:
     return usage
 
 
-# given a session, take domain_ids and domain_scores, which are in string format separated by ",", 
-# and replace with a list of the values
-# used with extract_session_data()
 def process_row(row : pd.Series) -> tuple:
+    """
+    Given a session, take domain_ids and domain_scores, which are in string format separated by ",", and replace with a list of the values.
+    This function is a helper function for extract_session_data()
+
+    Parameters:
+        row (pd.Series): A row from the DataFrame containing 'domain_ids' and 'domain_scores'.
+    
+    Returns:
+        tuple: A tuple containing two lists:
+            - values_a: List of integers representing domain IDs.
+            - values_b: List of floats representing domain scores.
+    """
     values_a = [int(x.strip()) for x in str(row['domain_ids']).split(',')]
     values_b = [float(x.strip()) for x in str(row['domain_scores']).split(',')]
     return values_a, values_b
 
-# Given a dataframe that contains sessions for a single patient, for each session/row, find most updated domain scores for all 14 domains,
-# keep previous scores, and encode domains as a binary vector. At the end, return a dataframe with these information.
+
+
 def extract_session_data(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Given a dataframe that contains sessions for a single patient, for each session/row, find most updated domain scores for all 14 domains,
+    record previous scores, and encode domains as a binary vector. At the end, return a dataframe with these information.
+
+    Parameters:
+        data (pd.DataFrame): The DataFrame containing session data with 'patient_id', 'domain_ids', 'domain_scores', and 'start_time' columns.
+    
+    Returns:
+        pd.DataFrame: A DataFrame with patient_id, domain encodings, previous scores, current scores, and start time."""
     # Initialize variables
     session_row = [] # contents of a row (patient id, encoding, cur score, prev score...)
     overall = [] # aggregate of everything (n sessions x 45)
@@ -96,8 +154,21 @@ def extract_session_data(data: pd.DataFrame) -> pd.DataFrame:
     scores_df.reset_index(drop=True, inplace=True)
     return scores_df
 
-# filter out session gaps, V1 uses DBSCAN clustering to find outliers in datetime data (copied from commit 9f8d808)
+
+
+# (copied from commit 9f8d808)
 def filter_datetime_outliers(data : pd.DataFrame, eps_days : int, min_samples : int) -> pd.DataFrame:
+    """
+    Uses DBSCAN clustering to filter outliers in datetime data based on the start_time column.
+
+    Parameters:
+        data (pd.DataFrame): The DataFrame containing session data with 'start_time' column.
+        eps_days (int): The maximum distance between two samples for one to be considered as in the neighborhood of the other, in days.
+        min_samples (int): The number of samples in a neighborhood for a point to be considered as a core point.
+
+    Returns:
+        pd.DataFrame: A DataFrame with outliers removed, containing the original columns except 'timestamp' and 'cluster'.
+    """
     df = data.copy()
 
     # Convert dates to numerical timestamps
@@ -116,8 +187,19 @@ def filter_datetime_outliers(data : pd.DataFrame, eps_days : int, min_samples : 
 
     return filtered_df
 
-# save metadata about the output file and configuration used to generate it
+
+
 def save_metadata(input_path : str, output_path : str, config_path : str, config : dict, stats : dict) -> None:
+    """
+    Saves metadata about the preprocessing operation, including input and output file paths, configuration used, timestamp, and statistics.
+    
+    Parameters:
+        input_path (str): Path to the input file.
+        output_path (str): Path to the output file.
+        config_path (str): Path to the configuration file used for preprocessing.
+        config (dict): Configuration dictionary containing parameters used in preprocessing.
+        stats (dict): Dictionary containing statistics about the output file, such as number of rows and columns.
+    """
     metadata = {
         "input_file": input_path,
         "output_file": output_path,

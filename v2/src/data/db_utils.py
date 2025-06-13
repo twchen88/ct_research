@@ -1,4 +1,3 @@
-### Functions that help with connecting to the database and running SQL queries
 import pymysql
 import yaml
 import pandas as pd
@@ -7,8 +6,25 @@ from datetime import datetime
 
 import src.utils.config_loading as config_loading
 
-# takes in the file name of the file that contains credentials and connection information, returns a connection object
-def connect(filename : str) -> pymysql.connections.Connection:
+"""
+src/data/dat_io.py
+-----------------
+This module contains functions that help with connecting to the database and running SQL queries.
+* connect: load connection configuration and connects to the SQL database using SSH tunneling.
+* load_sql: load and run a SQL query from sql/*.sql file and returns a pandas DataFrame.
+* save_metadata: save metadata about the output file and configuration used to generate it when running a query.
+"""
+
+def connect(filename: str) -> pymysql.connections.Connection:
+    """
+    Takes in the file name of the file that contains credentials and connection information, returns a connection object
+    
+    Parameters:
+        filename (str): The path to the JSON file containing the database connection configuration.
+
+    Returns:
+        pymysql.connections.Connection: A connection object to the MySQL database.
+    """
     # load in credential file
     config_dict = config_loading.load_json_config(filename)
     print("Connecting to database...")
@@ -37,8 +53,16 @@ def connect(filename : str) -> pymysql.connections.Connection:
 
     return con
 
-# takes in a string of query or an SQL file and connection object, returns a dataframe with read results
-def load_sql(query : str, con : pymysql.connections.Connection) -> pd.DataFrame:
+def load_sql(query: str, con: pymysql.connections.Connection) -> pd.DataFrame:
+    """
+    Takes in a string of query or an SQL file and connection object, returns a dataframe with read results.
+    
+    Parameters:
+        query (str): The SQL query string or the path to an SQL file.
+        con (pymysql.connections.Connection): The connection object to the MySQL database.
+    Returns:
+        pd.DataFrame: A pandas DataFrame containing the results of the SQL query.
+    """
     # if query string is not an SQL file, run the query directly
     if query[-4:] != ".sql":
         return pd.read_sql(query, con)
@@ -47,8 +71,15 @@ def load_sql(query : str, con : pymysql.connections.Connection) -> pd.DataFrame:
         with open(query, "r") as f:
             return pd.read_sql(f.read(), con)
         
-# save metadata about the output file and configuration used to generate it
-def save_metadata(output_path : str, config_path : str, config : dict) -> None:
+
+def save_metadata(output_path: str, config_path: str, config: dict) -> None:
+    """
+    Saves metadata about the output file and configuration used to generate it.
+    Parameters:
+        output_path (str): The path to the output file.
+        config_path (str): The path to the configuration file used to generate the output.
+        config (dict): The configuration dictionary containing source and database information.
+    """
     metadata = {
         "output_file": output_path,
         "config_file": config_path,
