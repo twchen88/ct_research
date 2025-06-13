@@ -3,7 +3,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.utils.logger import get_logger
 
 if __name__ == "__main__":
-    log = get_logger("play_with_logger")
+    log = get_logger("play_with_logger", log_file="sandbox/logs/play_with_logger.log")
     log.info("This is an info message.")
     log.warning("This is a warning message.")
     log.error("This is an error message.")

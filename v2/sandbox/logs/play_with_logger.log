@@ -1,0 +1,4 @@
+[INFO] 2025-06-13 16:52:45,925 — This is an info message.
+[WARNING] 2025-06-13 16:52:45,925 — This is a warning message.
+[ERROR] 2025-06-13 16:52:45,925 — This is an error message.
+[INFO] 2025-06-13 16:52:45,925 — Logger has handlers.
