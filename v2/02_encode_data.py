@@ -56,7 +56,7 @@ if __name__ == "__main__":
     encoded_data = np.hstack((
         df[encoding_columns].to_numpy(),
         encoded_data,
-        df[target_columns].to_numpy()
+        encoded_target
     ))
     print(f"Encoded data shape: {encoded_data.shape}")
 

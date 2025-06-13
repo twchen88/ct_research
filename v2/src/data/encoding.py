@@ -65,13 +65,14 @@ def encode_target_data(target: np.ndarray, encoded_domains: np.ndarray) -> np.nd
     - if encoding is 1, then target is target score
 
     Parameters:
-        data (np.ndarray): 2D array of floats with possible NaNs.
-        rand_seed (int): Seed for reproducibility.
+        target (np.ndarray): 2D array of floats with possible NaNs.
+        encoded_domains (np.ndarray): 2D array of encoded domain values (0 or 1).
 
     Returns:
         np.ndarray: 2D array with encoded values.
     """
-    return np.multiply(target, encoded_domains)
+    product = np.multiply(target, encoded_domains)
+    return np.nan_to_num(product, nan=0)
 
 
 def save_metadata(input_path: str, output_path: str, config_path: str, column_names: list) -> None:

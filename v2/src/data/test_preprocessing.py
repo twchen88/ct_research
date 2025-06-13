@@ -29,14 +29,16 @@ def test_sort_by_start_time():
         'start_time': ['2023-01-02 10:00:00', '2023-01-01 09:00:00', '2023-01-01 11:00:00']
     }
     df = pd.DataFrame(data)
+    # Convert start_time to datetime
+    df['start_time'] = pd.to_datetime(df['start_time'])
 
     # Sort by start_time
     sorted_df = preprocessing.sort_by_start_time(df)
 
     # Check if the DataFrame is sorted correctly
-    assert sorted_df['start_time'].iloc[0] == pd.Timestamp('2023-01-01 09:00:00')
-    assert sorted_df['start_time'].iloc[1] == pd.Timestamp('2023-01-01 11:00:00')
-    assert sorted_df['start_time'].iloc[2] == pd.Timestamp('2023-01-02 10:00:00')
+    assert sorted_df['start_time'].iloc[0] == pd.to_datetime('2023-01-01 09:00:00')
+    assert sorted_df['start_time'].iloc[1] == pd.to_datetime('2023-01-01 11:00:00')
+    assert sorted_df['start_time'].iloc[2] == pd.to_datetime('2023-01-02 10:00:00')
 
 
 def test_find_usage_frequency():
@@ -48,6 +50,8 @@ def test_find_usage_frequency():
     }
 
     df = pd.DataFrame(data)
+    # Convert start_time to datetime
+    df['start_time'] = pd.to_datetime(df['start_time'])
 
     # Find usage days
     usage_freq_df = preprocessing.find_usage_frequency(df)
@@ -116,6 +120,7 @@ def test_extract_session_data():
 
     df = pd.DataFrame(data)
     df = preprocessing.sort_by_start_time(df)
+    df['start_time'] = pd.to_datetime(df['start_time'], errors='coerce')
 
     session_data = df.groupby("patient_id")[df.columns].apply(preprocessing.extract_session_data).reset_index(drop=True)
     print(session_data)

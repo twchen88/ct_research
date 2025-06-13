@@ -31,7 +31,7 @@ def test_create_missing_indicator():
 
 def test_encode_target_data():
     # Test with a simple case
-    target = np.array([[0.5, 0.2, 0.8], [0.1, 0.4, 0.6]])
+    target = np.array([[0.5, 0.2, 0.8], [np.nan, 0.4, 0.6]])
     encoded_domains = np.array([[1, 0, 0,], [0, 1, 0]])
     
     encoded_target = encoding.encode_target_data(target, encoded_domains)
