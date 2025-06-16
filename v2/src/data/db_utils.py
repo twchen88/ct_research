@@ -1,5 +1,4 @@
 import pymysql
-import yaml
 import pandas as pd
 from sshtunnel import SSHTunnelForwarder
 from datetime import datetime
@@ -70,23 +69,3 @@ def load_sql(query: str, con: pymysql.connections.Connection) -> pd.DataFrame:
         # if query string is an SQL file, read the file and run the query
         with open(query, "r") as f:
             return pd.read_sql(f.read(), con)
-        
-
-def save_metadata(output_path: str, config_path: str, config: dict) -> None:
-    """
-    Saves metadata about the output file and configuration used to generate it.
-    Parameters:
-        output_path (str): The path to the output file.
-        config_path (str): The path to the configuration file used to generate the output.
-        config (dict): The configuration dictionary containing source and database information.
-    """
-    metadata = {
-        "output_file": output_path,
-        "config_file": config_path,
-        "timestamp": datetime.now().isoformat(),
-        "query": config['source']['sql_file_path'],
-        "database": config['source']['sql_params'],
-    }
-    meta_path = output_path.replace(".csv", ".meta.yaml")
-    with open(meta_path, "w") as f:
-        yaml.dump(metadata, f)

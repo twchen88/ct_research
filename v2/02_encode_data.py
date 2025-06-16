@@ -1,10 +1,38 @@
 import argparse
+import yaml
 import pandas as pd
 import numpy as np
 
 import src.utils.config_loading as config_loading
 import src.data.data_io as data_io
 import src.data.encoding as encoding
+
+from datetime import datetime
+from src.utils.metadata import get_git_commit_hash
+
+
+def save_metadata(input_path: str, output_path: str, config_path: str, column_names: list) -> None:
+    """
+    Saves metadata about the output file and configuration used to generate it.
+
+    Parameters:
+        output_file_path (str): Path to the output file.
+        config_file_path (str): Path to the configuration file.
+        config (dict): Configuration dictionary.
+        column_names (list): List of column names in the output file.
+    """
+    metadata = {
+        "time_stamp": datetime.now().isoformat(),
+        "git_commit_hash": get_git_commit_hash(),
+        "input_path": input_path,
+        "output_file_path": output_path,
+        "config_file_path": config_path,
+        "column_names": column_names
+    }
+
+    meta_path = output_path.replace(".npy", ".meta.yaml")
+    with open(meta_path, "w") as f:
+        yaml.dump(metadata, f)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Encode data so that it is compatible for input to the prediction neural network.")
@@ -66,7 +94,7 @@ if __name__ == "__main__":
 
     # Save metadata about the output file and configuration used to generate it
     print("Saving metadata...")
-    encoding.save_metadata(
+    save_metadata(
         input_path=source_path,
         output_path=target_path,
         config_path=args.config,

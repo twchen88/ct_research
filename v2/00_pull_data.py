@@ -1,9 +1,32 @@
 ## import libraries
 import argparse
+import yaml
+from datetime import datetime
 ## import custom modules
 import src.data.db_utils as db_utils
 import src.data.data_io as data_io
 import src.utils.config_loading as config_loading
+from src.utils.metadata import get_git_commit_hash
+
+def save_metadata(output_path: str, config_path: str, config: dict) -> None:
+    """
+    Saves metadata about the output file and configuration used to generate it.
+    Parameters:
+        output_path (str): The path to the output file.
+        config_path (str): The path to the configuration file used to generate the output.
+        config (dict): The configuration dictionary containing source and database information.
+    """
+    metadata = {
+        "output_file": output_path,
+        "config_file": config_path,
+        "timestamp": datetime.now().isoformat(),
+        "git_commit_hash": get_git_commit_hash(),
+        "query": config['source']['sql_file_path'],
+        "database": config['source']['sql_params'],
+    }
+    meta_path = output_path.replace(".csv", ".meta.yaml")
+    with open(meta_path, "w") as f:
+        yaml.dump(metadata, f)
 
 if __name__ == "__main__":
     ## parse command line arguments
@@ -39,7 +62,7 @@ if __name__ == "__main__":
     data_io.write_sessions_to_csv(output_data_file_path, data)
 
     ## save metadata about the output file and configuration used to generate it
-    db_utils.save_metadata(output_data_file_path, args.config, config)
+    save_metadata(output_data_file_path, args.config, config)
 
     ## close the database connection
     try:

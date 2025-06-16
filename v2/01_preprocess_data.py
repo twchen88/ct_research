@@ -1,9 +1,39 @@
 import argparse
-import pandas as pd
 import gc
+import yaml
+import pandas as pd
+
 import src.data.data_io as data_io
 import src.data.preprocessing as preprocessing
 import src.utils.config_loading as config_loading
+
+from datetime import datetime
+from typing import Dict, Any
+
+
+def save_metadata(input_path : str, output_path : str, config_path : str, config : Dict[str, Any], stats : Dict[Any, Any]) -> None:
+    """
+    Saves metadata about the preprocessing operation, including input and output file paths, configuration used, timestamp, and statistics.
+    
+    Parameters:
+        input_path (str): Path to the input file.
+        output_path (str): Path to the output file.
+        config_path (str): Path to the configuration file used for preprocessing.
+        config (dict): Configuration dictionary containing parameters used in preprocessing.
+        stats (dict): Dictionary containing statistics about the output file, such as number of rows and columns.
+    """
+    metadata = {
+        "input_file": input_path,
+        "output_file": output_path,
+        "config_file": config_path,
+        "timestamp": datetime.now().isoformat(),
+        "params": config["filter_params"],
+        "output_file_stats": stats
+    }
+    meta_path = output_path.replace(".csv", ".meta.yaml")
+    with open(meta_path, "w") as f:
+        yaml.dump(metadata, f)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Streamed preprocessing for large session data.")
@@ -81,7 +111,7 @@ if __name__ == "__main__":
 
     print(f"Saving processed data and metadata to {output_path}")
     data_io.write_sessions_to_csv(output_path, final_df)
-    preprocessing.save_metadata(
+    save_metadata(
         input_path=input_path,
         output_path=output_path,
         config_path=args.config,

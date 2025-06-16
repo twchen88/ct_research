@@ -1,4 +1,3 @@
-import yaml
 import pandas as pd
 import numpy as np
 
@@ -73,25 +72,3 @@ def encode_target_data(target: np.ndarray, encoded_domains: np.ndarray) -> np.nd
     """
     product = np.multiply(target, encoded_domains)
     return np.nan_to_num(product, nan=0)
-
-
-def save_metadata(input_path: str, output_path: str, config_path: str, column_names: list) -> None:
-    """
-    Saves metadata about the output file and configuration used to generate it.
-
-    Parameters:
-        output_file_path (str): Path to the output file.
-        config_file_path (str): Path to the configuration file.
-        config (dict): Configuration dictionary.
-        column_names (list): List of column names in the output file.
-    """
-    metadata = {
-        "input_path": input_path,
-        "output_file_path": output_path,
-        "config_file_path": config_path,
-        "column_names": column_names
-    }
-
-    meta_path = output_path.replace(".npy", ".meta.yaml")
-    with open(meta_path, "w") as f:
-        yaml.dump(metadata, f)
