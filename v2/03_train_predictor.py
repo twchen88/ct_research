@@ -127,7 +127,7 @@ if __name__ == "__main__":
         run_desc=run_desc,
         git_commit_hash=get_git_commit_hash(),
         input_path=data_source,
-        output_path=f"{output_destination}/data.npz",
+        output_path=f"{output_destination}",
         config_path=f"{output_destination}/config.yaml",
         metrics_path=f"{output_destination}/results.npz",
         plots_path=f"{output_destination}/loss_curve.png",

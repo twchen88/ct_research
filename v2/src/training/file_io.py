@@ -92,7 +92,7 @@ def save_metadata(run_desc: str, git_commit_hash: str, input_path: str, output_p
         "metrics_path": metrics_path,
         "plots_path": plots_path
     }
-    metadata_path = Path(output_path) / "metadata.json"
+    metadata_path = Path(output_path) / "metadata.yaml"
     Path(metadata_path).parent.mkdir(parents=True, exist_ok=True)
     with open(metadata_path, 'w') as f:
         yaml.dump(metadata, f, default_flow_style=False)
