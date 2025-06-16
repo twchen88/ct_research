@@ -1,0 +1,8 @@
+config_path: outputs/training_runs/run_20250616_code_test/config.yaml
+git_commit_hash: 91a7576b353f080cee22397bba6e6b2ff01d01fb
+input_path: data/encoded/predictor_encoded_20250613.npy
+metrics_path: outputs/training_runs/run_20250616_code_test/results.npz
+output_path: outputs/training_runs/run_20250616_code_test
+plots_path: outputs/training_runs/run_20250616_code_test/loss_curve.png
+run_desc: Quick test for model training functionality
+time_stamp: '2025-06-16T16:36:06.402669'
