@@ -5,6 +5,8 @@ import numpy as np
 from datetime import datetime
 from sklearn.cluster import DBSCAN
 
+from typing import Dict, Any, Tuple, List
+
 """
 src/data/preprocessing.py
 -----------------
@@ -19,7 +21,7 @@ and filtering outliers in datetime data.
 """
 
 
-def drop_duplicates(df : pd.DataFrame, based_on : list) -> pd.DataFrame:
+def drop_duplicates(df : pd.DataFrame, based_on : List[str]) -> pd.DataFrame:
     """
     Drop duplicate rows in a DataFrame based on specified columns, keeping the first appearance.
 
@@ -72,7 +74,7 @@ def find_usage_frequency(df : pd.DataFrame) -> pd.DataFrame:
     return usage
 
 
-def process_row(row : pd.Series) -> tuple:
+def process_row(row : pd.Series) -> Tuple[List[int], List[float]]:
     """
     Given a session, take domain_ids and domain_scores, which are in string format separated by ",", and replace with a list of the values.
     This function is a helper function for extract_session_data()
@@ -189,7 +191,7 @@ def filter_datetime_outliers(data : pd.DataFrame, eps_days : int, min_samples : 
 
 
 
-def save_metadata(input_path : str, output_path : str, config_path : str, config : dict, stats : dict) -> None:
+def save_metadata(input_path : str, output_path : str, config_path : str, config : Dict[str, Any], stats : Dict[Any, Any]) -> None:
     """
     Saves metadata about the preprocessing operation, including input and output file paths, configuration used, timestamp, and statistics.
     

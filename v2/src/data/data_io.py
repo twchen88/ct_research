@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+from typing import Iterator
+
 """
 src/data/dat_io.py
 -----------------
@@ -12,7 +14,7 @@ It is separated into two main sections: write functions and read functions.
 
 
 ## Write functions
-def write_sessions_to_csv(file_name : str, df : pd.DataFrame) -> None:
+def write_sessions_to_csv(file_name: str, df: pd.DataFrame) -> None:
     """
     Writes a DataFrame to a CSV file.
     Parameters:
@@ -37,7 +39,7 @@ def write_sessions_to_npy(file_name: str, data: np.ndarray) -> None:
 
 
 ## Read functions
-def read_raw_session_chunks(file_name: str, chunksize: int = 500_000):
+def read_raw_session_chunks(file_name: str, chunksize: int = 500_000) -> Iterator[pd.DataFrame]:
     """
     Reads a CSV file in chunks and yields each chunk as a DataFrame.
     Parameters:
