@@ -38,6 +38,8 @@ if __name__ == "__main__":
     device = config["settings"]["device"]
     run_desc = config["settings"]["run_desc"]
     seed = config["settings"]["seed"]
+    ratio_test = config["settings"]["test_ratio"]
+    ratio_validation = config["settings"]["val_ratio"]
     
     data_source = config["data"]["source"]
     destination_base = config["data"]["destination_base"]
@@ -68,8 +70,8 @@ if __name__ == "__main__":
     data = file_io.load_data(data_source)
 
     # split data into train, validatio, and test sets
-    train_data, test_data = training.split_train_test(data, ratio=0.1, n_samples=n_samples)
-    train_data, valid_data = training.split_train_test(train_data, ratio=0.2, n_samples=n_samples)
+    train_data, test_data = training.split_train_test(data, ratio=ratio_test, n_samples=n_samples)
+    train_data, valid_data = training.split_train_test(train_data, ratio=ratio_validation, n_samples=n_samples)
     # split input and target data, turn into tensors
     train_x, train_y = training.split_input_target(train_data, dims=dims)
     valid_x, valid_y = training.split_input_target(valid_data, dims=dims)
@@ -112,13 +114,19 @@ if __name__ == "__main__":
     # copy config file
     file_io.copy_config_file(args.config, f"{output_destination}/config.yaml")
 
+    # save metrics
+    metrics = {
+        "test_loss": test_loss,
+        "test_error": test_error.item(),  # Convert tensor to scalar
+    }
+    file_io.save_metrics(metrics, f"{output_destination}/metrics.yaml")
+
     # save results
     results = {
-        "train_loss": train_loss_history,
-        "val_loss": val_loss_history,
-        "test_predictions": predictions.numpy(),  # Convert tensor to numpy array
-        "test_loss": test_loss,
-        "test_error": test_error.item()  # Convert tensor to scalar
+        "train_loss_history": train_loss_history,
+        "val_loss_history": val_loss_history,
+        "test_set": test_data,
+        "test_predictions": predictions.numpy()  # Convert tensor to numpy array
     }
     file_io.save_metrics(results, f"{output_destination}/results.npz")
 

@@ -55,8 +55,22 @@ def save_metrics(metrics: dict, path: str):
         path (str): The path where the metrics will be saved.
     """
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    np.savez(path, **metrics)
+    with open(path, 'w') as f:
+        yaml.dump(metrics, f, default_flow_style=False)
     print(f"Metrics saved to {path}")
+
+
+def save_results(results: dict, path: str):
+    """
+    Save the results to the specified path.
+    
+    Parameters:
+        results (dict): The results to save.
+        path (str): The path where the results will be saved.
+    """
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    np.savez(path, **results)
+    print(f"Results saved to {path}")
 
 
 def copy_config_file(source: str, target: str):
