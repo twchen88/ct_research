@@ -2,6 +2,8 @@
 **/__pycache__/
 **/.DS_Store
 **/.pytest_cache/
+**/*.pt
+**/*.npz
 
 # v1
 v1/misc/
