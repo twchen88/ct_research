@@ -51,8 +51,11 @@ if __name__ == "__main__":
     n_samples = config["hyperparams"]["n_samples"]
     learning_rate = config["hyperparams"]["learning_rate"]
     dims = config["hyperparams"]["dims"]
-    
 
+    # get git commit hash
+    git_commit_hash = get_git_commit_hash()
+    print(f"Git commit hash: {git_commit_hash}")
+    
     # set global seed and device
     if device == "cuda" and not torch.cuda.is_available():
         raise ValueError("CUDA is selected as device, but no GPU is available. Please select 'cpu' as device.")
@@ -133,7 +136,7 @@ if __name__ == "__main__":
     # save metadata
     file_io.save_metadata(
         run_desc=run_desc,
-        git_commit_hash=get_git_commit_hash(),
+        git_commit_hash=git_commit_hash,
         input_path=data_source,
         output_path=f"{output_destination}",
         config_path=f"{output_destination}/config.yaml",
