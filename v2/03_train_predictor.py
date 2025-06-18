@@ -131,7 +131,7 @@ if __name__ == "__main__":
         "test_set": test_data,
         "test_predictions": predictions.numpy()  # Convert tensor to numpy array
     }
-    file_io.save_metrics(results, f"{output_destination}/results.npz")
+    file_io.save_results(results, f"{output_destination}/results.npz")
 
     # save metadata
     file_io.save_metadata(
