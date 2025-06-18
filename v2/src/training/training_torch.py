@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader
 from typing import Callable, Tuple
 
-from src.shared.model_torch import Predictor
+from src.training.model_torch import Predictor
 
 """
 src/training/training_torch.py
