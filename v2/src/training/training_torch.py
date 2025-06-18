@@ -109,21 +109,21 @@ def train_one_epoch(model: Predictor, data_loader: DataLoader, loss_function: Ca
 
 
 def train_model(model: Predictor, train_data_loader: DataLoader, val_data_loader: DataLoader, epochs: int, optimizer: torch.optim.Optimizer,
-    loss_function: Callable, device: str) -> Tuple[list, list]:
+    loss_function: Callable, device: str) -> Tuple[np.ndarray, np.ndarray]:
 
-    train_loss_history = []
-    val_loss_history = []
+    train_loss_history = np.zeros(epochs + 1)
+    val_loss_history = np.zeros(epochs + 1)
 
     # Initial loss before training
-    train_loss_history.append(evaluate_loss(model, train_data_loader, loss_function))
-    val_loss_history.append(evaluate_loss(model, val_data_loader, loss_function))
+    train_loss_history[0] = (evaluate_loss(model, train_data_loader, loss_function))
+    val_loss_history[0] = (evaluate_loss(model, val_data_loader, loss_function))
 
-    for epoch in tqdm(range(epochs), desc="Training Epochs", unit="epoch"):
+    for epoch in tqdm(range(1, epochs + 1), desc="Training Epochs", unit="epoch"):
         train_loss = train_one_epoch(model, train_data_loader, loss_function, optimizer)
         val_loss = evaluate_loss(model, val_data_loader, loss_function)
 
-        train_loss_history.append(train_loss)
-        val_loss_history.append(val_loss)
+        train_loss_history[epoch] = train_loss
+        val_loss_history[epoch] = val_loss
 
     return train_loss_history, val_loss_history
 
