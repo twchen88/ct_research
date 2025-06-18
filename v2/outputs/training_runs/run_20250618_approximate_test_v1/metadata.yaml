@@ -1,0 +1,8 @@
+config_path: outputs/training_runs/run_20250618_approximate_test_v1/config.yaml
+git_commit_hash: 381f300ef44cf9eec1e3a5ee08af0b807fd5c6d2
+input_path: data/encoded/predictor_encoded_20250613.npy
+metrics_path: outputs/training_runs/run_20250618_approximate_test_v1/results.npz
+output_path: outputs/training_runs/run_20250618_approximate_test_v1
+plots_path: outputs/training_runs/run_20250618_approximate_test_v1/loss_curve.png
+run_desc: Attempt at recreating/approximating v1 results with different data
+time_stamp: '2025-06-18T15:17:39.660633'
