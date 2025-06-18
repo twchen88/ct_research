@@ -11,7 +11,7 @@ import src.viz.training as visualize
 from datetime import datetime
 from pathlib import Path
 
-from src.training.model_torch import Predictor
+from src.shared.model_torch import Predictor
 from src.utils.reproducibility import set_global_seed
 from src.utils.metadata import get_git_commit_hash
 
