@@ -1,11 +1,12 @@
 import matplotlib.pyplot as plt
 from typing import List, Optional
+from pathlib import Path
 
 def compare_trajectories(
     best_peformance: List[float],
     middle_peformance: List[float],
     worst_peformance: List[float],
-    save_path: Optional[str] = None,
+    save_path: Optional[Path] = None,
     dpi: int = 300
 ):
     """
@@ -35,4 +36,4 @@ def compare_trajectories(
         plt.savefig(save_path, dpi=dpi, bbox_inches='tight')
         print(f"Figure saved to {save_path}")
 
-    plt.show()
+    plt.close()
