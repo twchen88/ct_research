@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+from src.training.model_torch import Predictor
 
 def deterministic_backend():
     """
@@ -12,13 +13,28 @@ def deterministic_backend():
 
 def load_model(model_path: str, device: str) -> torch.nn.Module:
     """
-    Load a PyTorch model from the specified path.
-    
-    :param model_path: Path to the saved model file.
-    :return: Loaded PyTorch model.
+    Load a PyTorch model from a saved state_dict.
+
+    Parameters:
+        model_path (str): Path to the .pt or .pth file containing the state_dict.
+        device (str): The device to map the model to ("cpu" or "cuda").
+        model_class (type): The model class to instantiate.
+        *model_args, **model_kwargs: Arguments to initialize the model.
+
+    Returns:
+        torch.nn.Module: The loaded model ready for inference.
     """
-    model = torch.load(model_path, map_location=torch.device(device))
-    model.eval()  # Set the model to evaluation mode
+    # Step 1: Instantiate the model, assume Predictor is the model class for this version
+    model = Predictor()
+    
+    # Step 2: Load the state_dict
+    state_dict = torch.load(model_path, map_location=torch.device(device))
+    model.load_state_dict(state_dict)
+    
+    # Step 3: Set to eval mode
+    model.to(device)
+    model.eval()
+    
     return model
 
 def inference(model: torch.nn.Module, data: torch.Tensor) -> torch.Tensor:
