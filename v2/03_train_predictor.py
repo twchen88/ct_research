@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import src.training.file_io as file_io
 import src.training.training_torch as training
 import src.training.evaluation_torch as evaluation
-import src.shared.inference as inference
 import src.utils.config_loading as config_loading
 import src.viz.training as visualize
 
@@ -104,7 +103,7 @@ if __name__ == "__main__":
 
     ## basic evaluation: evaluate loss and error on test set
     test_loss = training.evaluate_loss(model, test_data_loader, loss_function)
-    predictions = inference.predict(model, test_data_loader)
+    predictions = evaluation.predict(model, test_data_loader)
     test_error = evaluation.evaluate_error(predictions, test_y)
 
     ## plotting
@@ -129,8 +128,7 @@ if __name__ == "__main__":
     results = {
         "train_loss_history": train_loss_history,
         "val_loss_history": val_loss_history,
-        "test_input": test_x.numpy(),  # Convert tensor to numpy array
-        "test_target": test_y.numpy(),  # Convert tensor to numpy array
+        "test_set": test_data,
         "test_predictions": predictions.numpy()  # Convert tensor to numpy array
     }
     file_io.save_results(results, f"{output_destination}/results.npz")
