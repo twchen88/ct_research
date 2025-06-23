@@ -128,7 +128,8 @@ if __name__ == "__main__":
     results = {
         "train_loss_history": train_loss_history,
         "val_loss_history": val_loss_history,
-        "test_set": test_data,
+        "test_x": test_x.numpy(),  # Convert tensor to numpy array
+        "test_y": test_y.numpy(),  # Convert tensor to numpy array
         "test_predictions": predictions.numpy()  # Convert tensor to numpy array
     }
     file_io.save_results(results, f"{output_destination}/results.npz")
