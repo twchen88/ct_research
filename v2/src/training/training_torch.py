@@ -59,7 +59,7 @@ def split_train_test(data: np.ndarray, ratio: float = 0.25, n_samples=None) -> T
     Returns:
         tuple: A tuple containing the training and testing datasets as numpy arrays.
     """
-    train_data, test_data = train_test_split(data, test_size=0.25)
+    train_data, test_data = train_test_split(data, test_size=ratio)
 
     if n_samples is not None: # if n_samples is specified, limit the number of samples
         train_data = train_data[:n_samples].copy()
