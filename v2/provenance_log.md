@@ -19,11 +19,10 @@ If dates are included in file names, it must be the date when the file is USED (
 **`03_train_predictor.py`**: Takes in the encoded data specified in the config files in config/train/, train the model according to the hyper parameters specified. Outputs (model, metadata, plots, metrics, etc) are stored in a specified directory in outputs/training_runs/.
 - `python 03_train_predictor.py --config config/train/[YYYYMMDD].yaml --tag [few word description of the purpose of the run]`
 
-**`04_assess_accuracy_repeat.py`**
+**`04_aggregate_average.py`**
 
-**`05_assess_accuracy_nonrepeat.py`**
+**`05_simulate_trajectory.py`**
 
-**`06_run_trajectory_experiment.py`**
 
 ### files
 - workflow.md describes the workflow from scripts to file
@@ -68,6 +67,7 @@ Data that has been encoded using 02_encode_data.py, source from preprocessed/
 - 20250609: no target encoding implemented (commit 20250609 138a93f5d8603b018d46fbac6e1a60b935494a19)
 
 ## notebooks/
+Numbered by create date.
 
 ## outputs/
 
