@@ -4,6 +4,6 @@ settings:
   device: "cpu"
   seed: 42
 data:
-  data_source: "output/training_runs/run_20250623_approximate_test_v3/results.npz"
-  model_source: "output/training_runs/run_20250623_approximate_test_v3/model.pt"
+  data_source: "outputs/training_runs/run_20250623_approximate_test_v3/results.npz"
+  model_source: "outputs/training_runs/run_20250623_approximate_test_v3/model.pt"
   destination_base: ""
