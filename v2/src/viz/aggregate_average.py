@@ -17,13 +17,13 @@ def plot_error_by_missing_count(x_axis, std, error, run_type: str, save_path=Non
     plt.ylabel("Error")
     plt.title(f"Prediction MAE and Ground Truth Std. Comparison for {run_type.upper()} Sessions")
     plt.grid(axis='y', linestyle='--', alpha=0.7)
-    plt.legend()
-    plt.show()
+    plt.legend()    
 
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"Figure saved to {save_path}")
-    
+
+    plt.show()
     plt.close()
 
 
@@ -44,11 +44,10 @@ def plot_average_aggregate_by_missing_count(x_axis, avg_dict, std_dict, run_type
     plt.legend()
     plt.grid(axis='y', linestyle='--', alpha=0.7)
 
-    # Show plot
-    plt.show()
-
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"Figure saved to {save_path}")
 
+    # Show plot
+    plt.show()
     plt.close()
