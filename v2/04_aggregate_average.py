@@ -151,11 +151,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Aggregate average scores from multiple runs for a more quantitative view.")
     parser.add_argument("--config", type=str, required=True, help="Path to the configuration file.")
     parser.add_argument("--tag", type=str, required=True, help="Tag to identify the run, describe the experiment in a few words.")
+    parser.add_argument("--run_type", type=str, required=True, help="repeat or nonrepeat")
     args = parser.parse_args()
 
     # load configuration
     config = load_yaml_config(args.config)
-    run_type = config["settings"]["type"] # repeat vs non-repeat
+    run_type = args.run_type # repeat vs non-repeat
     device = config["settings"]["device"] # cpu or cuda
     data_source = config["data"]["data_source"] # npz file with multiple arrays
     model_source = config["data"]["model_source"] # path to the model

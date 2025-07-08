@@ -1,6 +1,5 @@
 ### Purpose: Debug config file for 02 notebook and 04 script
 settings:
-  type: "non-repeat"
   device: "cpu"
   seed: 42
 data:
