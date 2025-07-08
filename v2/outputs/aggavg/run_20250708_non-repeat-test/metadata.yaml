@@ -1,0 +1,13 @@
+config:
+    data:
+        data_source: outputs/training_runs/run_20250623_approximate_test_v3/results.npz
+        destination_base: outputs/aggavg/
+        model_source: outputs/training_runs/run_20250623_approximate_test_v3/model.pt
+    settings:
+        device: cpu
+        seed: 42
+        type: non-repeat
+figure_path:
+- accuracy_assessment.png
+- aggregate_average.png
+git_commit_hash: b7743344ff1d7d4dd2f0ecd116078d616d76e75d
