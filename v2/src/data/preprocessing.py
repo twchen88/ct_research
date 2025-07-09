@@ -19,7 +19,7 @@ and filtering outliers in datetime data.
 """
 
 
-def drop_duplicates(df : pd.DataFrame, based_on : List[str]) -> pd.DataFrame:
+def drop_duplicates(df: pd.DataFrame, based_on: List[str]) -> pd.DataFrame:
     """
     Drop duplicate rows in a DataFrame based on specified columns, keeping the first appearance.
 
@@ -34,7 +34,7 @@ def drop_duplicates(df : pd.DataFrame, based_on : List[str]) -> pd.DataFrame:
     return df
 
 
-def sort_by_start_time(df : pd.DataFrame) -> pd.DataFrame:
+def sort_by_start_time(df: pd.DataFrame) -> pd.DataFrame:
     """
     Given a dataframe, sort by start time, return the sorted dataframe.
 
@@ -49,7 +49,7 @@ def sort_by_start_time(df : pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def find_usage_frequency(df : pd.DataFrame) -> pd.DataFrame:
+def find_usage_frequency(df: pd.DataFrame) -> pd.DataFrame:
     """
     Given a dataframe of all considered sessions, for each patient, find usage frequency in terms of unique days, 
     return a dataframe with patient_id, usage_time, and unique_days.
@@ -72,7 +72,7 @@ def find_usage_frequency(df : pd.DataFrame) -> pd.DataFrame:
     return usage
 
 
-def process_row(row : pd.Series) -> Tuple[List[int], List[float]]:
+def process_row(row: pd.Series) -> Tuple[List[int], List[float]]:
     """
     Given a session, take domain_ids and domain_scores, which are in string format separated by ",", and replace with a list of the values.
     This function is a helper function for extract_session_data()
@@ -157,7 +157,7 @@ def extract_session_data(data: pd.DataFrame) -> pd.DataFrame:
 
 
 # (copied from commit 9f8d808)
-def filter_datetime_outliers(data : pd.DataFrame, eps_days : int, min_samples : int) -> pd.DataFrame:
+def filter_datetime_outliers(data: pd.DataFrame, eps_days: int, min_samples: int) -> pd.DataFrame:
     """
     Uses DBSCAN clustering to filter outliers in datetime data based on the start_time column.
 
@@ -186,3 +186,19 @@ def filter_datetime_outliers(data : pd.DataFrame, eps_days : int, min_samples : 
     filtered_df = df[df["cluster"] != -1].drop(columns=["timestamp", "cluster"])
 
     return filtered_df
+
+
+def convert_to_percentile(df: pd.DataFrame, columns: List[str] = [f"domain {i} score" for i in range(1, 15)]) -> pd.DataFrame:
+    """
+    Convert specified columns in a DataFrame to percentiles.
+
+    Parameters:
+        df (pd.DataFrame): The DataFrame containing the data.
+        columns (list): List of column names to convert to percentiles.
+
+    Returns:
+        pd.DataFrame: DataFrame with specified columns converted to percentiles.
+    """
+    for col in columns:
+        df[col] = df[col].rank(pct=True)
+    return df

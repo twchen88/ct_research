@@ -102,12 +102,15 @@ if __name__ == "__main__":
         print(f"Processed chunk {i}, rows: {len(chunk)}")
         del chunk
         gc.collect()
+    
 
     final_df = pd.concat(all_sessions, ignore_index=True)
     stats = {
         'num_users': final_df['patient_id'].nunique(),
         'num_sessions': final_df.shape[0]
     }
+
+    final_df = preprocessing.convert_to_percentile(final_df)
 
     print(f"Saving processed data and metadata to {output_path}")
     data_io.write_sessions_to_csv(output_path, final_df)
