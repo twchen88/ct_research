@@ -1,0 +1,12 @@
+config:
+    settings:
+        device: cpu
+        model_path: outputs/training_runs/run_20250709_percentile_v1/model.pt
+        output_base: outputs/trajectory/
+        seed: 42
+figure_path: !!python/object/apply:pathlib.PosixPath
+- outputs
+- trajectory
+- run_20250806_trajectory_percentile_v1
+- trajectory_plot.png
+git_commit_hash: 314f63cdf4fdf0e75a3aa04a59f2021704705883
