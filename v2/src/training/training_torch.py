@@ -22,7 +22,7 @@ class custom_dataset(Dataset):
     Custom dataset class for handling input and target data in PyTorch.
     This class inherits from torch.utils.data.Dataset and implements the necessary methods to work with DataLoader.
     """
-    def __init__(self, data: np.ndarray, target: np.ndarray):
+    def __init__(self, data: torch.Tensor, target: torch.Tensor):
         super().__init__()
         self.data = data
         self.target = target
@@ -68,13 +68,35 @@ def split_train_test(data: np.ndarray, ratio: float = 0.25, n_samples=None) -> T
     return train_data, test_data
 
 
-def split_input_target(data: np.ndarray, dims: int = 42) -> tuple:
+def split_input_target(data: np.ndarray, dims: int = 42) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Split the full data into input and target data.
+
+    Parameters:
+        data (np.ndarray): The full dataset containing both input and target data.
+        dims (int): The number of dimensions for the input data. The target data will be the remaining dimensions.
+    
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor]: A tuple containing two tensors: input data and target data.
+    The input data will have the first `dims` columns, and the target data will have the remaining columns.
+    """
     input_data = data[:, :dims]
     target_data = data[:, dims:]
     return torch.from_numpy(input_data), torch.from_numpy(target_data)
 
 
 def evaluate_loss(model, data_loader, loss_function):
+    """
+    Given a model and a DataLoader, evaluate the loss on the dataset.
+
+    Parameters:
+        model (Predictor, as defined in model_torch.py): The model to evaluate.
+        data_loader (DataLoader): The DataLoader containing the dataset.
+        loss_function (Callable): The loss function to use for evaluation.
+    
+    Returns:
+        float: The average loss over the dataset.
+    """
     model.eval()
     total_loss = 0.0
     with torch.no_grad():
@@ -86,6 +108,20 @@ def evaluate_loss(model, data_loader, loss_function):
 
 
 def train_one_epoch(model: Predictor, data_loader: DataLoader, loss_function: Callable, optimizer: torch.optim.Optimizer) -> float:
+    """
+    Train the model for one epoch using the provided DataLoader, loss function, and optimizer.
+    Returns the average loss for the epoch over all samples in the DataLoader.
+
+    Parameters:
+        model (Predictor): The model to train.
+        data_loader (DataLoader): The DataLoader containing the training dataset.
+        loss_function (Callable): The loss function to use for training.
+        optimizer (torch.optim.Optimizer): The optimizer to use for updating model parameters.
+
+    Returns:
+        float: The average loss for the epoch.
+    """
+    
     model.train()
     running_loss = 0.0
     total_samples = 0
@@ -110,6 +146,9 @@ def train_one_epoch(model: Predictor, data_loader: DataLoader, loss_function: Ca
 
 def train_model(model: Predictor, train_data_loader: DataLoader, val_data_loader: DataLoader, epochs: int, optimizer: torch.optim.Optimizer,
     loss_function: Callable, device: str) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    
+    """
 
     train_loss_history = np.zeros(epochs + 1)
     val_loss_history = np.zeros(epochs + 1)
