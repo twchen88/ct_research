@@ -106,3 +106,21 @@ def max_prediction_from_difference_pair(difference_matrix, prediction_matrix, cu
             max_values[i] = prediction_matrix[i, valid_indices[max_idx]]
 
     return max_values, max_indices
+
+def max_prediction_from_difference(difference_matrix, prediction_matrix, current_matrix):
+    nan_mask = np.isnan(current_matrix)  # Boolean mask where True indicates NaN
+
+    # Initialize arrays to store results
+    max_indices = np.full(difference_matrix.shape[0], np.nan)  # Store max indices
+    max_values = np.full(difference_matrix.shape[0], np.nan)  # Store corresponding prediction values
+
+    # Iterate through each row
+    for i in range(difference_matrix.shape[0]):
+        valid_indices = np.where(nan_mask[i])[0]  # Get column indices where current_matrix has NaN
+        if valid_indices.size > 0:
+            valid_differences = difference_matrix[i, valid_indices]  # Select values where NaN exists in current_matrix
+            max_idx = np.argmax(valid_differences)  # Find index of max value (relative to valid_indices)
+            max_indices[i] = valid_indices[max_idx]  # Store original column index
+            max_values[i] = prediction_matrix[i, valid_indices[max_idx]]  # Get corresponding prediction value
+
+    return max_values, max_indices
