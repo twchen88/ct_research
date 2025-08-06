@@ -1,0 +1,7 @@
+## Purpose: test trajectory generation with approximate model
+
+settings:
+  output_base: "outputs/trajectory/"
+  model_path: "outputs/training_runs/run_20250709_percentile_v1/model.pt"
+  device: "cpu"
+  seed: 42
