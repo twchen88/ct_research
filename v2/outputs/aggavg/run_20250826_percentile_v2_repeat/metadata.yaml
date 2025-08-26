@@ -1,0 +1,12 @@
+config:
+    data:
+        data_source: outputs/training_runs/run_20250826_percentile_v2/results.npz
+        destination_base: outputs/aggavg/
+        model_source: outputs/training_runs/run_20250826_percentile_v2/model.pt
+    settings:
+        device: cpu
+        seed: 42
+figure_path:
+- accuracy_assessment.png
+- aggregate_average.png
+git_commit_hash: 50ce2c9ac81503569e4dbf8a9fa25bbd32243576
