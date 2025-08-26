@@ -1,0 +1,8 @@
+config_path: outputs/training_runs/run_20250826_percentile_v2/config.yaml
+git_commit_hash: bd088de5c31d37e65d4afe964a2dee1a6d10e025
+input_path: data/encoded/predictor_encoded_20250826.npy
+metrics_path: outputs/training_runs/run_20250826_percentile_v2/results.npz
+output_path: outputs/training_runs/run_20250826_percentile_v2
+plots_path: outputs/training_runs/run_20250826_percentile_v2/loss_curve.png
+run_desc: First training run with percentile scores instead of raw domain scores
+time_stamp: '2025-08-26T11:19:46.769508'
