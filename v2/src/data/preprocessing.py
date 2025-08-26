@@ -188,7 +188,7 @@ def filter_datetime_outliers(data: pd.DataFrame, eps_days: int, min_samples: int
     return filtered_df
 
 
-def convert_to_percentile(df: pd.DataFrame, columns: List[str] = [f"domain {i} score" for i in range(1, 15)]) -> pd.DataFrame:
+def convert_to_percentile(df: pd.DataFrame, columns: List[str] = [f"domain {i} score" for i in range(1, 15)] + [f"domain {i} target" for i in range(1, 15)]) -> pd.DataFrame:
     """
     Convert specified columns in a DataFrame to percentiles.
 
