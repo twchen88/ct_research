@@ -1,9 +1,21 @@
-### This module provides plotting functions that are specific to the src/data/ related sections of the prediction project.
 import matplotlib.pyplot as plt
 import pandas as pd
 
+"""
+src/viz/data.py
+----------------------------
+This module provides plotting functions that are specific to the src/data/ related sections of the prediction project.
+"""
 
-def plot_filtering_visualization(df, sessions_filter_df, pid):
+def plot_filtering_visualization(df: pd.DataFrame, sessions_filter_df: pd.DataFrame, pid: str):
+    """
+    Visualize the filtering process of sessions for a specific patient. Use in a notebook for data visualization and exploration purposes.
+
+    Parameters:
+        df (pd.DataFrame): Original dataframe containing all sessions.
+        sessions_filter_df (pd.DataFrame): Filtered dataframe after applying session filtering.
+        pid (str): Patient ID to visualize.
+    """
     df1 = df[df.patient_id == pid]
     df2 = sessions_filter_df[sessions_filter_df.patient_id == pid]
 
@@ -38,3 +50,4 @@ def plot_filtering_visualization(df, sessions_filter_df, pid):
     plt.grid(True, linestyle="--", alpha=0.5)
 
     plt.show()
+    plt.close()

@@ -1,13 +1,22 @@
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
-import src.experiments.aggregate_average as core
-import src.experiments.file_io as file_io
+"""
+src/viz/aggregate_average.py
+----------------------------
+Visualization functions for aggregate average experiments.
+"""
 
+def plot_error_by_missing_count(x_axis: list, std: list, error: list, run_type: str, save_path=None):
+    """
+    Plot prediction MAE against ground truth standard deviation for different counts of missing domains.
 
-
-def plot_error_by_missing_count(x_axis, std, error, run_type: str, save_path=None):
+    Parameters:
+        x_axis (list): List of integers representing the number of missing domains.
+        std (list): List of floats representing the ground truth standard deviation for each count of missing domains.
+        error (list): List of floats representing the prediction MAE for each count of missing domains.
+        run_type (str): Type of run, either "repeat" or "nonrepeat".
+        save_path (str, optional): Path to save the figure. If None, the figure is not saved.
+    """
     plt.figure(figsize=(8, 5))
     plt.plot(x_axis, std, label="ground truth std", marker="x", color="green")
     plt.plot(x_axis, error, label="Prediction MAE", marker="o", color="blue")
@@ -27,7 +36,17 @@ def plot_error_by_missing_count(x_axis, std, error, run_type: str, save_path=Non
     plt.close()
 
 
-def plot_average_aggregate_by_missing_count(x_axis, avg_dict, std_dict, run_type: str, save_path=None):
+def plot_average_aggregate_by_missing_count(x_axis: list, avg_dict: dict, std_dict: dict, run_type: str, save_path=None):
+    """
+    Plot average scores with error bars for different methods against the number of unknown domains.
+
+    Parameters:
+        x_axis (list): List of integers representing the number of unknown domains.
+        avg_dict (dict): Dictionary with keys representing the different methods ("best", "random", "gt") and values as lists of average scores.
+        std_dict (dict): Dictionary with keys representing the different methods ("best", "random", "gt") and values as lists of standard deviations.
+        run_type (str): Type of run, either "repeat" or "nonrepeat".
+        save_path (str, optional): Path to save the figure. If None, the figure is not saved.
+    """
     plt.figure(figsize=(10, 6))
 
     plt.errorbar(x_axis, avg_dict["best"], yerr=std_dict["best"], label="Best", fmt='-o', capsize=5, color="blue")
@@ -37,8 +56,14 @@ def plot_average_aggregate_by_missing_count(x_axis, avg_dict, std_dict, run_type
 
     # Labels and Title
     plt.xlabel("Number of Unknown Domains")
-    plt.ylabel("Average Score")
-    plt.title(f"{run_type.upper()} Session Average Score")
+    
+    # Different ylabel and title based on run_type
+    if run_type == "repeat":
+        plt.ylabel("Average Improvement (Higher is Better)")
+        plt.title(f"{run_type.upper()} Session Average Improvement by Number of Unknown Domains")
+    else:
+        plt.ylabel("Average Score")
+        plt.title(f"{run_type.upper()} Session Average Score by Number of Unknown Domains")
 
     # Legend and Grid
     plt.legend()

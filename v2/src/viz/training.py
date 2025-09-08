@@ -2,21 +2,22 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+
 from pathlib import Path
 from typing import Callable, Tuple
-
+from matplotlib.figure import Figure
 """
 src/viz/training.py
 ------------------------
 This module provides functions for visualizing loss curves and saving plots.
 """
 
-def save_plot(plot, path: str):
+def save_plot(plot: Figure, path: str):
     """
     Save the plot to the specified path.
     
     Parameters:
-        plot: The plot to save.
+        plot (Figure): The plot to save.
         path (str): The path where the plot will be saved.
     """
     Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -24,12 +25,12 @@ def save_plot(plot, path: str):
     print(f"Plot saved to {path}")
 
 
-def plot_single_curve(fig, train_loss, val_loss, output_path):
+def plot_single_curve(fig: Figure, train_loss: list, val_loss: list, output_path: str):
     """
     Plot a single curve for training and validation loss.
     
     Parameters:
-        fig: The figure to plot on.
+        fig (Figure): The figure to plot on.
         train_loss (list): The training loss values.
         val_loss (list): The validation loss values.
     """
@@ -41,7 +42,7 @@ def plot_single_curve(fig, train_loss, val_loss, output_path):
     plt.title('Training and Validation Loss Curve')
     plt.legend()
     plt.grid(True)
-    save_plot(plt, output_path)
+    save_plot(fig, output_path)
 
 '''
 # plot average improvement plots and store, d_type= Ground Truth or Prediction, mode=train or test, cur_score=whatever we need, data=test or train data
