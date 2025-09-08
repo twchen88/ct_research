@@ -147,7 +147,20 @@ def train_one_epoch(model: Predictor, data_loader: DataLoader, loss_function: Ca
 def train_model(model: Predictor, train_data_loader: DataLoader, val_data_loader: DataLoader, epochs: int, optimizer: torch.optim.Optimizer,
     loss_function: Callable, device: str) -> Tuple[np.ndarray, np.ndarray]:
     """
-    
+    Train the model for a specific number of epochs, calling the train_one_epoch function for each epoch.
+    Keeps track of training and validation loss history and returns them.
+
+    Parameters:
+        model (Predictor): The model to train.
+        train_data_loader (DataLoader): The DataLoader for the training dataset.
+        val_data_loader (DataLoader): The DataLoader for the validation dataset.
+        epochs (int): The number of epochs to train the model.
+        optimizer (torch.optim.Optimizer): The optimizer to use for training.
+        loss_function (Callable): The loss function to use for training and validation.
+        device (str): The device to run the training on ('cpu' or 'cuda'), currently not used.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Two numpy arrays containing the training and validation loss history.
     """
 
     train_loss_history = np.zeros(epochs + 1)
