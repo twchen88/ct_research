@@ -1,6 +1,12 @@
 import logging
 from pathlib import Path
 
+"""
+src/utils/logger.py
+--------------------------------
+This module provides a utility function to create and configure loggers.
+"""
+
 def get_logger(name: str, log_file=None) -> logging.Logger:
     """
     Returns a logger with the specified name.

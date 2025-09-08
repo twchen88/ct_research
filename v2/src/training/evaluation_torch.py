@@ -6,6 +6,7 @@ from src.training.training_torch import MAE
 
 """
 src/training/evaluation_torch.py
+--------------------------------
 This module provides functions for evaluating a PyTorch predictor model.
 * predict: Generates predictions using the model and a data loader.
 * evaluate_error: Computes the mean absolute error between predictions and targets.

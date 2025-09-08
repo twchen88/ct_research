@@ -4,6 +4,7 @@ import yaml
 
 """
 src/utils/config_loading.py
+--------------------------------
 Functions for loading configuration files in JSON and YAML formats.
 """
 
