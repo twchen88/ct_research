@@ -2,6 +2,11 @@ import numpy as np
 from typing import List, Tuple
 from pathlib import Path
 
+"""
+src/experiments/file_io.py
+----------------------------
+File I/O operations for loading and saving test data and predictions as well as saving necessary results.
+"""
 
 ## read
 def load_test_data(file_path: str, file_names: List[str]) -> Tuple[np.ndarray, np.ndarray]:
