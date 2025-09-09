@@ -13,6 +13,9 @@
 - Uses modular code, config files, metadata files
 - See `v2/provenance_log.md`
 
+#### v2.1/
+- Added gradient skipping and percentile scores as options for preprocessing and training
+
 ### v3/
 - Added proposed work and experiments from dissertation proposal
 - See `v3/provenance_log.md`
