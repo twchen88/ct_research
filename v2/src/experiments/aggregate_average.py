@@ -7,7 +7,7 @@ from src.experiments.shared import *
 """
 src/experiments/aggregate_average.py
 --------------------------------
-
+This module contains functions to process experimental data used by 04_aggregate_average.py. Any helper function that is specific to this experiment is defined here.
 """
 
 def filter_rows_by_sum(data: np.ndarray, col_range: slice, sum_threshold: int) -> tuple:
