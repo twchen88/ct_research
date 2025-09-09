@@ -4,6 +4,12 @@ import random
 
 from src.experiments.shared import *
 
+"""
+src/experiments/aggregate_average.py
+--------------------------------
+
+"""
+
 def filter_rows_by_sum(data: np.ndarray, col_range: slice, sum_threshold: int) -> tuple:
     """
     Filters out rows where the sum of specified range of columns falls below a given threshold.
@@ -113,6 +119,46 @@ def predict_all_domains(model, x, y, loop_range):
     
     matrix = np.column_stack(prediction_list)
     return matrix
+
+def max_prediction_from_difference_pair(difference_matrix, prediction_matrix, current_matrix, run_type):
+    """
+    For each row, find the index of the largest improvement among the domains
+    where current_matrix is 'missing' (i.e., [0, 0] or [1, 1]).
+
+    Parameters:
+        difference_matrix (np.ndarray): of shape (N, D)
+        prediction_matrix (np.ndarray): of shape (N, D)
+        current_matrix (np.ndarray): of shape (N, D, 2), score pairs
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: (max_values, max_indices)
+    """
+    # Step 1: Create a boolean mask of missing values: [0,0] or [1,1]
+    current_matrix_pairs = current_matrix.reshape(-1, 14, 2)
+
+    eq_mask = current_matrix_pairs[:, :, 0] == current_matrix_pairs[:, :, 1]
+    val_mask = (current_matrix_pairs[:, :, 0] == 0) | (current_matrix_pairs[:, :, 0] == 1)
+    missing_mask = eq_mask & val_mask  # Shape: (N, D)
+
+    # Step 2: Allocate outputs
+    max_indices = np.full(difference_matrix.shape[0], np.nan)
+    max_values = np.full(difference_matrix.shape[0], np.nan)
+
+    if run_type == "repeat":
+        valid_mask = ~missing_mask
+    else:
+        valid_mask = missing_mask
+
+    # Step 3: Iterate through each row
+    for i in range(difference_matrix.shape[0]):
+        valid_indices = np.where(valid_mask[i])[0]
+        if valid_indices.size > 0:
+            valid_differences = difference_matrix[i, valid_indices]
+            max_idx = np.argmax(valid_differences)
+            max_indices[i] = valid_indices[max_idx]
+            max_values[i] = prediction_matrix[i, valid_indices[max_idx]]
+
+    return max_values, max_indices
 
 
 # given x and y and original dataframe, find the encoding that results in the best scores, return encoding and predictions
