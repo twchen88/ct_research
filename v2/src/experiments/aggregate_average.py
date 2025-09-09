@@ -2,6 +2,8 @@ import numpy as np
 import torch
 import random
 
+from typing import Tuple, List
+
 from src.experiments.shared import *
 
 """
@@ -10,7 +12,7 @@ src/experiments/aggregate_average.py
 This module contains functions to process experimental data used by 04_aggregate_average.py. Any helper function that is specific to this experiment is defined here.
 """
 
-def filter_rows_by_sum(data: np.ndarray, col_range: slice, sum_threshold: int) -> tuple:
+def filter_rows_by_sum(data: np.ndarray, col_range: slice, sum_threshold: int) -> Tuple[np.ndarray, np.ndarray]:
     """
     Filters out rows where the sum of specified range of columns falls below a given threshold.
 
@@ -91,14 +93,37 @@ def create_random_encoding(data: np.ndarray, run_type: str) -> np.ndarray:
     return output
 
 
-def split_encoding_and_scores(data: np.ndarray, dims=14):
+def split_encoding_and_scores(data: np.ndarray, dims=14) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Given an array that combines encodings and scores, split them into two arrays and return encoding and scores separately.
+
+    Parameters:
+        data (np.ndarray): Input array with shape (n_rows, >=28).
+        dims (int): Number of encoding columns. Default is 14.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: (encoding, scores)
+    """
     encoding = data[:, :dims]
     scores = data[:, dims:]
     return encoding, scores
 
 
-# take in a dataframe, find predictions and return the predictions
-def find_random_predictions(model, data, run_type):
+def find_random_predictions(model: torch.nn.Module, data: np.ndarray, run_type: str) -> Tuple[np.ndarray, torch.Tensor]:
+    """
+    Take in a dataframe, find random predictions for the given data using the specified run type.
+    If run_type is "repeat", select from non-missing pairs; if "new", select from missing pairs.
+    Returns the random encoding and the corresponding predictions.
+
+    Parameters:
+        model: Trained model for inference.
+        data (np.ndarray): Input data array with shape (n_rows, >=42).
+        run_type (str): Either "repeat" or "new".
+
+    Returns:
+        Tuple[np.ndarray, torch.Tensor]: (random_encoding, predictions)
+    
+    """
     random_encoding = create_random_encoding(data, run_type=run_type)
     x_random = add_encoding(data, random_encoding)
     predictions = inference(model, x_random)
@@ -106,8 +131,20 @@ def find_random_predictions(model, data, run_type):
 
 
 
-# given scores with missing indicators (x) and target (y), return a list of predictions according to which index is 1 in encoding
-def predict_all_domains(model, x, y, loop_range):
+def predict_all_domains(model: torch.nn.Module, x: np.ndarray, y: np.ndarray, loop_range: List[int]) -> np.ndarray:
+    """
+    Given scores with missing indicators (x) and target (y), return a list of predictions according to which index is 1
+    in encoding.
+
+    Parameters:
+        model (torch.nn.Module): The trained model for inference.
+        x (np.ndarray): Input data array with shape (n_rows, 28).
+        y (np.ndarray): Target data array with shape (n_rows, 14).
+        loop_range (range): Range of domain indices to loop through (e.g., range(14)).
+
+    Returns:
+        np.ndarray: Prediction matrix of shape (n_rows, 14) with predictions for each domain.
+    """
     prediction_list = []
     rows, cols = y.shape
     # loop through fourteen domains, get the predictions and store the predictions for that domain only in a list
@@ -161,8 +198,20 @@ def max_prediction_from_difference_pair(difference_matrix, prediction_matrix, cu
     return max_values, max_indices
 
 
-# given x and y and original dataframe, find the encoding that results in the best scores, return encoding and predictions
-def find_best_idx_pred(model, x, y, missing_counts, run_type):
+def find_best_idx_pred(model: torch.nn.Module, x: np.ndarray, y: np.ndarray, missing_counts: List[int], run_type: str) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Given x and y and original dataframe, find the encoding that results in the best scores, return encoding and predictions
+
+    Parameters:
+        model (torch.nn.Module): The trained model for inference.
+        x (np.ndarray): Input data array with shape (n_rows, 28).
+        y (np.ndarray): Target data array with shape (n_rows, 14).
+        missing_counts (List[int]): List of missing counts to consider.
+        run_type (str): Either "repeat" or "nonrepeat".
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: (best_encoding, best_predictions)
+    """
     prediction_matrix = predict_all_domains(model, x, y, missing_counts)
     difference = prediction_matrix - x[:, ::2]
     # Find the index of the max difference for each row
@@ -172,7 +221,20 @@ def find_best_idx_pred(model, x, y, missing_counts, run_type):
     return best_encoding, future_scores_best
 
 
-def reconstruct_max_matrices(max_values, max_indices, shape):
+def reconstruct_max_matrices(max_values: np.ndarray, max_indices: np.ndarray, shape: tuple) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Given the max values and their corresponding indices, reconstruct two matrices:
+    1. A matrix with the max values placed at their respective indices, and 0s elsewhere.
+    2. A binary matrix with 1s at the positions of the max indices, and 0s elsewhere.
+
+    Parameters:
+        max_values (np.ndarray): Array of max values for each row.
+        max_indices (np.ndarray): Array of indices corresponding to the max values for each row.
+        shape (tuple): Desired shape of the output matrices (n_rows, n_cols).
+    
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: (max_values_matrix, max_indices_matrix)
+    """
     max_values_matrix = np.zeros(shape)  # Matrix for max values
     max_indices_matrix = np.zeros(shape, dtype=int)  # Matrix for 1s at max indices
 
@@ -215,6 +277,12 @@ def extract_score_pairs(data: np.ndarray) -> np.ndarray:
 
 
 def overall_avg_improvement_with_std(data, pred_score):
+    """
+    Given the an array of encoding and scores combined as well as an array of the predicted scores, 
+    Find the average improvement and standard deviation of the improvement for the nonzero improvements.
+
+
+    """
     encoding, cur_score = split_encoding_and_scores(data)
     cur_score = cur_score[::2]
 
@@ -224,18 +292,15 @@ def overall_avg_improvement_with_std(data, pred_score):
     # Compute improvement
     improvement = encoding * (pred_score - cur_score)
 
-    # Extract nonzero values
-    nonzero_improvement = improvement[improvement != 0]
-
-    if len(nonzero_improvement) == 0:
+    if len(improvement) == 0:
         avg_improvement = 0
         std_dev = 0
         print("No sessions with nonzero improvement")
     else:
-        avg_improvement = np.mean(nonzero_improvement)
-        std_dev = np.std(nonzero_improvement, ddof=1)  # Using sample standard deviation (ddof=1)
+        avg_improvement = np.mean(improvement)
+        std_dev = np.std(improvement, ddof=1)  # Using sample standard deviation (ddof=1)
 
-        print("Number of predicted domains:", len(nonzero_improvement))
+        print("Number of predicted domains:", len(improvement))
         print("Average improvement:", avg_improvement)
         print("Standard deviation:", std_dev)
 
