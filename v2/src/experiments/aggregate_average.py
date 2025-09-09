@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import random
 
-from typing import Tuple, List
+from typing import Tuple, List, Any, Literal
 
 from src.experiments.shared import *
 
@@ -276,21 +276,23 @@ def extract_score_pairs(data: np.ndarray) -> np.ndarray:
     return data.reshape(-1, 14, 2)  # Reshape to (n_rows, 14, 2)
 
 
-def overall_avg_improvement_with_std(data, pred_score):
+def overall_avg_improvement_with_std(data: np.ndarray, pred_score: np.ndarray) -> Tuple[np.floating[Any] | Literal[0], np.floating[Any] | Literal[0]]:
     """
     Given the an array of encoding and scores combined as well as an array of the predicted scores, 
     Find the average improvement and standard deviation of the improvement for the nonzero improvements.
 
+    Parameters:
+        data (np.ndarray): Array with shape (n_rows, >=28), assuming 14 score pairs start at col 14.
+        pred_score (np.ndarray): Array of predicted scores with shape (n_rows, 14).
 
+    Returns:
+        Tuple[np.floating[Any], np.floating[Any]]: (average improvement, standard deviation)
     """
     encoding, cur_score = split_encoding_and_scores(data)
     cur_score = cur_score[::2]
 
-    pred_score = pred_score * encoding
-    cur_score = cur_score * encoding
-
     # Compute improvement
-    improvement = encoding * (pred_score - cur_score)
+    improvement = (pred_score - cur_score)[encoding == 1]
 
     if len(improvement) == 0:
         avg_improvement = 0
@@ -310,12 +312,20 @@ def overall_avg_improvement_with_std(data, pred_score):
 def filter_sessions_by_missing_count_indices(data: np.ndarray, n_missing: int) -> np.ndarray:
     """
     Returns indices of rows where the number of missing domains equals `n_missing`.
+
+    Parameters:
+        data (np.ndarray): Array with shape (n_rows, >=42), assuming 14 score pairs start at col 14.
+        n_missing (int): Target number of missing score pairs
+
+    Returns:
+        np.ndarray: Array of indices where the number of missing score pairs equals `n_missing`.
     """
     score_pairs = extract_score_pairs(data)  # Shape: (n_rows, 14, 2)
     left, right = score_pairs[:, :, 0], score_pairs[:, :, 1]
     missing_mask = left == right
     missing_counts = np.sum(missing_mask, axis=1)
     return np.where(missing_counts == n_missing)[0]
+
 
 def filter_sessions_by_missing_count(data: np.ndarray, n_missing: int) -> np.ndarray:
     """
@@ -339,10 +349,17 @@ def filter_sessions_by_missing_count(data: np.ndarray, n_missing: int) -> np.nda
     return missing_counts == n_missing
 
 
-def compute_errors(gt_score, prediction_score):
+def compute_errors(gt_score: np.ndarray, prediction_score: np.ndarray) -> Tuple[np.floating[Any] | Literal[0], np.floating[Any] | Literal[0]]:
     """
     Takes in score and ground truth, and computes the mean absolute error
     and the standard deviation of the ground truth scores.
+
+    Parameters:
+        gt_score (np.ndarray): Ground truth scores.
+        prediction_score (np.ndarray): Predicted scores.
+    
+    Returns:
+        Tuple[float, float]: (mean absolute error, standard deviation of ground truth)
     """
     # calculate mean absolute error
     mean_error = np.mean(np.abs(prediction_score - gt_score))
@@ -352,25 +369,36 @@ def compute_errors(gt_score, prediction_score):
     return mean_error, ground_truth_std
 
 
-def filter_with_masks(data, masks):
+def filter_with_masks(data: np.ndarray, masks: List[np.ndarray]) -> np.ndarray:
     """
-    Filters the data based on the provided masks.
+    Filters the data based on the provided masks, masks can be in a list.
     
     Parameters:
-    - data (np.ndarray): The data to be filtered.
-    - masks (list of np.ndarray): List of boolean masks to filter the data.
-    
+        data (np.ndarray): The data to be filtered.
+        masks (list of np.ndarray): List of boolean masks to filter the data.
+
     Returns:
-    - np.ndarray: Filtered data.
+        np.ndarray: Filtered data.
     """
     for mask in masks:
         data = data[mask]
     return data
 
 
-def compute_averages_and_stds(cur_scores, future_scores, masks):
+def compute_averages_and_stds(cur_scores: np.ndarray, future_scores: np.ndarray, masks: List[np.ndarray]) -> Tuple[np.floating[Any] | Literal[0], np.floating[Any] | Literal[0]]:
     """
-    masks: first mask for missing count, second mask for location of target value (encoding == 1)
+    Computes the average and standard deviation of the improvements between current and future scores,
+    applying the provided masks to filter the data.
+
+    List of masks - first mask for missing count, second mask for location of target value (encoding == 1)
+
+    Parameters:
+        cur_scores (np.ndarray): Current scores.
+        future_scores (np.ndarray): Future scores.
+        masks (list of np.ndarray): List of boolean masks to filter the data.
+    
+    Returns:
+        Tuple[float, float]: (average improvement, standard deviation of improvement)
     """
     difference = future_scores - cur_scores
     difference_filtered = filter_with_masks(difference, masks)
