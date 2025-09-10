@@ -1,9 +1,30 @@
+import torch
 import numpy as np
+
+from typing import Tuple, List
 
 from src.experiments.shared import create_single_encoding, inference, add_encoding
 from src.data.encoding import create_missing_indicator
 
-def max_prediction_from_difference(difference_matrix, prediction_matrix, current_matrix):
+"""
+src/experiments/trajectory.py
+--------------------------------
+This module contains helper functions to determine the next domain to practice based on different strategies (best, random, worst).
+"""
+
+def max_prediction_from_difference(difference_matrix: np.ndarray, prediction_matrix: np.ndarray, current_matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Find the maximum prediction improvement for each row based on the difference between current and predicted scores.
+
+    Parameters:
+        difference_matrix (np.ndarray): A 2D array where each element represents the difference between predicted and current scores.
+        prediction_matrix (np.ndarray): A 2D array of predicted scores.
+        current_matrix (np.ndarray): A 2D array of current scores, with NaNs indicating unpracticed domains.
+
+    Returns:
+        max_values (np.ndarray): An array containing the maximum predicted scores for each row where current scores are NaN.
+        max_indices (np.ndarray): An array containing the column indices of the maximum predicted scores.
+    """
     nan_mask = np.isnan(current_matrix)  # Boolean mask where True indicates NaN
 
     # Initialize arrays to store results
@@ -21,11 +42,23 @@ def max_prediction_from_difference(difference_matrix, prediction_matrix, current
 
     return max_values, max_indices
 
-def min_prediction_from_difference(difference_matrix, prediction_matrix, current_matrix):
+def min_prediction_from_difference(difference_matrix: np.ndarray, prediction_matrix: np.ndarray, current_matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Find the minimum prediction improvement for each row based on the difference between current and predicted scores.
+
+    Parameters:
+        difference_matrix (np.ndarray): A 2D array where each element represents the difference between predicted and current scores.
+        prediction_matrix (np.ndarray): A 2D array of predicted scores.
+        current_matrix (np.ndarray): A 2D array of current scores, with NaNs indicating unpracticed domains.
+
+    Returns:
+        min_values (np.ndarray): An array containing the minimum predicted scores for each row where current scores are NaN.
+        min_indices (np.ndarray): An array containing the column indices of the minimum predicted scores.
+    """
     nan_mask = np.isnan(current_matrix)  # Boolean mask where True indicates NaN
 
     # Initialize arrays to store results
-    min_indices = np.full(difference_matrix.shape[0], np.nan)  # Store max indices
+    min_indices = np.full(difference_matrix.shape[0], np.nan)  # Store min indices
     min_values = np.full(difference_matrix.shape[0], np.nan)  # Store corresponding prediction values
 
     # Iterate through each row
@@ -40,7 +73,19 @@ def min_prediction_from_difference(difference_matrix, prediction_matrix, current
     return min_values, min_indices
 
 
-def random_prediction_from_difference(difference_matrix, prediction_matrix, current_matrix):
+def random_prediction_from_difference(difference_matrix: np.ndarray, prediction_matrix: np.ndarray, current_matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Find a random prediction improvement for each row based on the difference between current and predicted scores.
+
+    Parameters:
+        difference_matrix (np.ndarray): A 2D array where each element represents the difference between predicted and current scores.
+        prediction_matrix (np.ndarray): A 2D array of predicted scores.
+        current_matrix (np.ndarray): A 2D array of current scores, with NaNs indicating unpracticed domains.
+
+    Returns:
+        random_values (np.ndarray): An array containing the random predicted scores for each row where current scores are NaN.
+        random_indices (np.ndarray): An array containing the column indices of the random predicted scores.
+    """
     nan_mask = np.isnan(current_matrix)  # Boolean mask where True indicates NaN
 
     # Initialize arrays to store results
@@ -58,8 +103,19 @@ def random_prediction_from_difference(difference_matrix, prediction_matrix, curr
     return random_values, random_indices
 
 
-# take in initial data, mode, and model, return the next domain and predicted score according to mode
-def find_next_domain(initial_scores, model, mode):
+def find_next_domain(initial_scores: np.ndarray, model: torch.nn.Module, mode: str) -> Tuple[int, float]:
+    """
+    Take in initial data, mode, and model, return the next domain and predicted score according to mode
+
+    Parameters:
+        initial_scores (np.ndarray): A 2D array of initial scores with NaNs for unpracticed domains.
+        model (torch.nn.Module): A trained model used for making predictions.
+        mode (str): The strategy to use for selecting the next domain. Options are "best, random, worst".
+    
+    Returns:
+        next_domain (int): The index of the next domain to practice (0-13 corresponds to domain 1-14).
+        next_score (float): The predicted score for the selected domain.
+    """
     prediction_list = [] # initialize where to store the prediction scores
     for i in range(14):
         rows, cols = initial_scores.shape
@@ -89,8 +145,20 @@ def find_next_domain(initial_scores, model, mode):
         value, index = min_prediction_from_difference(difference, prediction_matrix, initial_scores)
     return int(index[0]), value[0]
 
-# take in model and mode, return a list of scores according to the mode
-def trajectory(model, mode):
+def trajectory(model: torch.nn.Module, mode: str) -> Tuple[List[float], np.ndarray, List[int]]:
+    """
+    Take in model and mode ("best", "random", or "worst"), return a list of known domain averages across time, 
+    a matrix of individual domain scores across time, and order of domains practiced.
+
+    Parameters:
+        model (torch.nn.Module): A trained model used for making predictions.
+        mode (str): The strategy to use for selecting the next domain. Options are "best, random, worst".
+    
+    Returns:
+        performance (List[float]): A list of known domain averages at each time step.
+        current_scores (np.ndarray): A 2D array of individual domain scores at all time steps.
+        order (List[int]): A list of the order in which domains were practiced (1-14).
+    """
     performance = [] # known domain average, s_i, at time step i
     order = [] # order of domains practiced
     current_scores = np.empty((1,14))
