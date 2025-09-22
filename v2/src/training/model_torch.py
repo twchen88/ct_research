@@ -21,7 +21,8 @@ class Predictor(torch.nn.Module):
         self.model = torch.nn.Sequential(
             torch.nn.Linear(n_domains * 3, 100),
             torch.nn.Sigmoid(),
-            torch.nn.Linear(100, n_domains)
+            torch.nn.Linear(100, n_domains),
+            torch.nn.Sigmoid()
         )
 
     def forward(self, x):
