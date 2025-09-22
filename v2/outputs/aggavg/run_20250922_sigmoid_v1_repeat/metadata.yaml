@@ -1,0 +1,12 @@
+config:
+    data:
+        data_source: outputs/training_runs/run_20250922_sigmoid_final_layer_v1/results.npz
+        destination_base: outputs/aggavg/
+        model_source: outputs/training_runs/run_20250922_sigmoid_final_layer_v1/model.pt
+    settings:
+        device: cpu
+        seed: 42
+figure_path:
+- accuracy_assessment.png
+- aggregate_average.png
+git_commit_hash: 7692f5ff1988a8b02d7cd2d8270a4df111cd303b
