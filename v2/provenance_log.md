@@ -17,12 +17,13 @@ If dates are included in file names, it must be the date when the file is USED (
 - `python 02_encode_data.py --config config/encode/[YYYYMMDD].yaml`
 
 **`03_train_predictor.py`**: Takes in the encoded data specified in the config files in config/train/, train the model according to the hyper parameters specified. Outputs (model, metadata, plots, metrics, etc) are stored in a specified directory in outputs/training_runs/.
-- `python 03_train_predictor.py --config config/train/[YYYYMMDD].yaml --tag [few word description of the purpose of the run]`
+- `python 03_train_predictor.py --config config/train/[YYYYMMDD].yaml --tag [run description in a few words]`
 
-**`04_aggregate_average.py`**
+**`04_aggregate_average.py`**: Takes in the results from training run (test data and predictions) as specified in the config files, visualize the aggregate average experiment as detailed in dissertation proposal (comparison between prediction MAE and Ground Truth & Average Score/Improvement across # of missing domains). Outputs (plots, data) are stored in a specified directory in outputs/aggavg/.
+- `python 04_aggregate_average.py --config config/experiments/YYYYMMDD_aggavg_[desp].yaml --tag [run description in a few words] --run_type [repeat | nonrepeat]`
 
-**`05_simulate_trajectory.py`**
-
+**`05_simulate_trajectory.py`**:Takes in the saved, trained model from training run specified in config files, simulate three different domain-choosing strategies, plot the resulting score trajectory. Outputs (plots, data) are stored in specified directory in outputs/trajectory/.
+- `python 05_simulate_trajectory.py --config config/experiments/YYYYMMDD_trajectory_[desp].yaml --tag [run description in a few words]`
 
 ### files
 - workflow.md describes the workflow from scripts to file
