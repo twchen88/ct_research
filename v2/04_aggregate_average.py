@@ -15,10 +15,11 @@ from src.utils.metadata import get_git_commit_hash
 from src.utils.config_loading import load_yaml_config
 
 
-def create_run_dir(base_dir: str, tag: str):
+def create_run_dir(base_dir: str, tag: str, run_type: str):
     timestamp = datetime.now().strftime("%Y%m%d")
     tag_part = f"_{tag}"
-    run_id = f"run_{timestamp}{tag_part}"
+    run_type_part = f"_{run_type}"
+    run_id = f"run_{timestamp}{tag_part}{run_type_part}"
     run_path = Path(base_dir) / run_id
     run_path.mkdir(parents=True, exist_ok=False)
     return run_id, run_path
@@ -164,7 +165,7 @@ if __name__ == "__main__":
     seed = config["settings"]["seed"]
 
     ## set output directory
-    _, output_destination = create_run_dir(destination_base, args.tag)
+    _, output_destination = create_run_dir(destination_base, args.tag, run_type)
 
     ## set global seed
     set_global_seed(seed)
