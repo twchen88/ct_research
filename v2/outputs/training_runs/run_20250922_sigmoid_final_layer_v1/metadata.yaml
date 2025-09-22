@@ -1,0 +1,8 @@
+config_path: outputs/training_runs/run_20250922_sigmoid_final_layer_v1/config.yaml
+git_commit_hash: 178fbd58d27b70182bdbf8331ec391d7c3268c7c
+input_path: data/encoded/predictor_encoded_20250613.npy
+metrics_path: outputs/training_runs/run_20250922_sigmoid_final_layer_v1/results.npz
+output_path: outputs/training_runs/run_20250922_sigmoid_final_layer_v1
+plots_path: outputs/training_runs/run_20250922_sigmoid_final_layer_v1/loss_curve.png
+run_desc: Seeing the difference adding sigmoid to final layer makes
+time_stamp: '2025-09-22T12:15:43.755322'
