@@ -53,6 +53,14 @@ Purpose: config files for model training, source data from data/encoded, outputs
 
 Notes: includes various setings and hyperparameters
 
+### experiments/
+Purpose: config files for various experiments.
+
+Naming convention starts with YYYYMMDD_[experiment name]_[version number].yaml
+
+- *_aggavg.yaml
+- *_trajectory.yaml
+
 ## data/
 Notes: CSV files should be saved without index column
 
@@ -89,6 +97,10 @@ Subdirectories are named in the format of `YYYYMMDD_[tag]/`. Tag should describe
 
 
 ### experiments/
+- `aggregate_average.py`: contains functions that are specific to aggregate average experiments
+- `file_io.py`: 
+- `shared.py`: 
+- `trajectory.py`: 
 
 ### training/
 - `file_io.py`: contains functions that read and write files in appropriate formats for model training
@@ -105,4 +117,7 @@ Files with `_torch` appended are implemented with Pytorch.
 - `metadata.py`: helper functions for metadata information
 
 ## viz/
+- `aggregate_average.py`:
+- `data.py`:  
 - `training.py`: plots for model training
+- `trajectory.py`: 
