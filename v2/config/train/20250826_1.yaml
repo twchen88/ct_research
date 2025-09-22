@@ -2,7 +2,7 @@
 ### Shoulld be identical to 20250709, but with target also in percentile scores.
 settings:
   device: "cpu"  # or "cpu"
-  run_desc: "First training run with percentile scores instead of raw domain scores"
+  run_desc: "Second training run with percentile scores instead of raw domain scores"
   seed: 42
   test_ratio: 0.25
   val_ratio: 0.2 # 0.2 of training data after test split  = 0.75 * 0.2 = 0.15 of total data
