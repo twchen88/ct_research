@@ -38,43 +38,8 @@ def save_metadata(output_path, config, git_commit_hash, figure_paths):
 
 
 
-def evaluate_error_by_missing_count(test_x, test_y, test_predictions, dims=14):
-    encoding, cur_score = core.split_encoding_and_scores(test_x, dims=dims)
-    future_score_gt = test_y
-
-    mean_errors_list = []
-    ground_truth_std_list = []
-    masks = []
-
-    ground_truth_dict = {}
-    missing_counts = list(range(0, dims))
-
-    for n in missing_counts:
-        filter_mask = core.filter_sessions_by_missing_count(cur_score, n)
-        filtered_encoding = encoding[filter_mask]
-
-        masks = [filter_mask, (filtered_encoding == 1)]
-
-        filtered_gt = core.filter_with_masks(future_score_gt, masks)
-        filtered_pred = core.filter_with_masks(test_predictions, masks)
-
-        ground_truth_dict[str(n)] = filtered_gt
-
-        if filtered_gt.size == 0:
-            mean_errors_list.append(np.nan)
-            ground_truth_std_list.append(np.nan)
-            continue
-
-        mean_error, std_dev = core.compute_errors(filtered_gt, filtered_pred)
-        mean_errors_list.append(mean_error)
-        ground_truth_std_list.append(std_dev)
-
-    return missing_counts, mean_errors_list, ground_truth_std_list, ground_truth_dict
-
-
 def accuracy_assessment_pipeline(test_x, test_y, test_predictions, output_destination, figure_path, run_type):
-    
-    missing_counts, mean_errors_list, ground_truth_std_list, ground_truth_dict = evaluate_error_by_missing_count(
+    missing_counts, mean_errors_list, ground_truth_std_list, ground_truth_dict = core.evaluate_error_by_missing_count(
         test_x=test_x,
         test_y=test_y,
         test_predictions=test_predictions,
@@ -94,23 +59,6 @@ def accuracy_assessment_pipeline(test_x, test_y, test_predictions, output_destin
     )
 
 
-def average_scores_by_missing_counts(missing_counts, current_scores, future_scores, encoding):
-    avg_lst = []
-    std_lst = []
-    
-    for n in missing_counts:
-        missing_mask = core.filter_sessions_by_missing_count(current_scores, n)
-        
-        masks = [missing_mask, (encoding[missing_mask] == 1)]
-        avg, std = core.compute_averages_and_stds(current_scores[:, ::2], future_scores, masks)
-
-        avg_lst.append(avg)
-        std_lst.append(std)
-
-    return avg_lst, std_lst
-
-
-
 def aggregate_average_pipeline(test_x, test_y, model, figure_path, run_type):
     # split encoding and scores
     gt_encoding, cur_score_gt = core.split_encoding_and_scores(test_x, dims=14)
@@ -120,15 +68,13 @@ def aggregate_average_pipeline(test_x, test_y, model, figure_path, run_type):
     missing_counts = list(range(0, 14))
 
     # get scores based on strategy
-    best_encoding, future_scores_best = core.find_best_idx_pred(model, cur_score_gt, test_y, missing_counts, run_type)
-
+    best_encoding, future_scores_best = core.find_best_idx_pred(model, cur_score_gt, future_score_gt, missing_counts, run_type)
     random_encoding, future_scores_random = core.find_random_predictions(model, cur_score_gt, run_type)
 
-    avg_lst_best, std_lst_best = average_scores_by_missing_counts(missing_counts, cur_score_gt, future_scores_best, best_encoding)
+    avg_lst_best, std_lst_best = core.average_scores_by_missing_counts(missing_counts, cur_score_gt, future_scores_best, best_encoding)
+    avg_lst_random, std_lst_random = core.average_scores_by_missing_counts(missing_counts, cur_score_gt, future_scores_random, random_encoding)
 
-    avg_lst_random, std_lst_random = average_scores_by_missing_counts(missing_counts, cur_score_gt, future_scores_random, random_encoding)
-
-    avg_lst_gt, std_lst_gt = average_scores_by_missing_counts(missing_counts, cur_score_gt, future_score_gt, gt_encoding)
+    avg_lst_gt, std_lst_gt = core.average_scores_by_missing_counts(missing_counts, cur_score_gt, future_score_gt, gt_encoding)
 
     avg_dict = {
         "best": avg_lst_best,

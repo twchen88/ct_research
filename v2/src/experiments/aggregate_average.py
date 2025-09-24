@@ -14,7 +14,7 @@ This module contains functions to process experimental data used by 04_aggregate
 
 def filter_rows_by_sum(data: np.ndarray, col_range: slice, sum_threshold: int) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Filters out rows where the sum of specified range of columns falls below a given threshold.
+    Filters for rows where the sum of specified range of columns falls below a given threshold.
 
     Returns:
     - filtered_data (np.ndarray): Rows where column sum <= threshold
@@ -24,9 +24,13 @@ def filter_rows_by_sum(data: np.ndarray, col_range: slice, sum_threshold: int) -
     filtered_data = data[sum_mask]
     return filtered_data, sum_mask
 
-def find_missing_mask(x1, x2):
-    eq = x1 == x2
-    is_0_or_1 = (x1 == 0) | (x1 == 1)
+def find_missing_mask(x1, x2, eps=1e-8):
+    """
+    Given two arrays x1 and x2, return a boolean mask where the pairs (same index) are missing
+    - i.e., both values are equal and either 0 or 1 (i.e., [0,0] or [1,1]).
+    """
+    eq = np.isclose(x1, x2, atol=eps)  # they are (almost) equal
+    is_0_or_1 = np.isclose(x1, 0.0, atol=eps) | np.isclose(x1, 1.0, atol=eps)
     return eq & is_0_or_1
 
 
@@ -204,7 +208,7 @@ def find_best_idx_pred(model: torch.nn.Module, x: np.ndarray, y: np.ndarray, mis
 
     Parameters:
         model (torch.nn.Module): The trained model for inference.
-        x (np.ndarray): Input data array with shape (n_rows, 28).
+        x (np.ndarray): Current Score data array with shape (n_rows, 28).
         y (np.ndarray): Target data array with shape (n_rows, 14).
         missing_counts (List[int]): List of missing counts to consider.
         run_type (str): Either "repeat" or "nonrepeat".
@@ -407,3 +411,53 @@ def compute_averages_and_stds(cur_scores: np.ndarray, future_scores: np.ndarray,
     std_dev = np.std(difference_filtered)
 
     return average, std_dev
+
+
+def evaluate_error_by_missing_count(test_x, test_y, test_predictions, dims=14):
+    encoding, cur_score = split_encoding_and_scores(test_x, dims=dims)
+    future_score_gt = test_y
+
+    mean_errors_list = []
+    ground_truth_std_list = []
+    masks = []
+
+    ground_truth_dict = {}
+    missing_counts = list(range(0, dims))
+
+    for n in missing_counts:
+        filter_mask = filter_sessions_by_missing_count(cur_score, n)
+        filtered_encoding = encoding[filter_mask]
+
+        masks = [filter_mask, (filtered_encoding == 1)]
+
+        filtered_gt = filter_with_masks(future_score_gt, masks)
+        filtered_pred = filter_with_masks(test_predictions, masks)
+
+        ground_truth_dict[str(n)] = filtered_gt
+
+        if filtered_gt.size == 0:
+            mean_errors_list.append(np.nan)
+            ground_truth_std_list.append(np.nan)
+            continue
+
+        mean_error, std_dev = compute_errors(filtered_gt, filtered_pred)
+        mean_errors_list.append(mean_error)
+        ground_truth_std_list.append(std_dev)
+
+    return missing_counts, mean_errors_list, ground_truth_std_list, ground_truth_dict
+
+
+def average_scores_by_missing_counts(missing_counts, current_scores, future_scores, encoding):
+    avg_lst = []
+    std_lst = []
+    
+    for n in missing_counts:
+        missing_mask = filter_sessions_by_missing_count(current_scores, n)
+        
+        masks = [missing_mask, (encoding[missing_mask] == 1)]
+        avg, std = compute_averages_and_stds(current_scores[:, ::2], future_scores, masks)
+
+        avg_lst.append(avg)
+        std_lst.append(std)
+
+    return avg_lst, std_lst
