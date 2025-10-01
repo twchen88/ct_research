@@ -69,7 +69,7 @@ def create_random_encoding(data: np.ndarray, run_type: str) -> np.ndarray:
     at random where the score pair is invalid ([0,0] or [1,1]).
     
     Parameters:
-        data (np.ndarray): Array with shape (n_rows, >=42). Assumes columns 14–41 are 14 score pairs.
+        data (np.ndarray): Array with shape (n_rows, 28). Contains current scores and complements only.
         run_type (str): Either "repeat" or "nonrepeat". If "repeat", select from non-missing pairs; if "nonrepeat", select from missing pairs.
 
     Returns:
