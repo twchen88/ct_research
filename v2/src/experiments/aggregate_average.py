@@ -29,8 +29,8 @@ def find_missing_mask(x1, x2, eps=1e-8):
     Given two arrays x1 and x2, return a boolean mask where the pairs (same index) are missing
     - i.e., both values are equal and either 0 or 1 (i.e., [0,0] or [1,1]).
     """
-    eq = np.isclose(x1, x2, atol=eps)  # they are (almost) equal
-    is_0_or_1 = np.isclose(x1, 0.0, atol=eps) | np.isclose(x1, 1.0, atol=eps)
+    eq = np.isclose(x1, x2, atol=eps, rtol=0)  # they are (almost) equal
+    is_0_or_1 = np.isclose(x1, 0.0, atol=eps, rtol=0) | np.isclose(x1, 1.0, atol=eps, rtol=0)  # they are (almost) 0 or 1
     return eq & is_0_or_1
 
 

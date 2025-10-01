@@ -152,3 +152,144 @@ class TestFindMissingMask:
         assert mask.dtype == bool
         assert mask.shape == x1.shape
         assert not mask.any()
+
+def _make_row(encoding14, pairs14):
+    """
+    Build a single 42-length row: 14 encodings + 14 (x,y) pairs.
+    """
+    enc = np.asarray(encoding14, dtype=float)
+    flat_pairs = np.asarray([v for xy in pairs14 for v in xy], dtype=float)
+    assert enc.shape == (14,)
+    assert flat_pairs.shape == (28,)
+    return np.concatenate([enc, flat_pairs])
+
+
+class TestAssignRepeat:
+    def test_vacuous_true_when_all_encodings_zero(self):
+        enc = [0] * 14
+        pairs = [(0.0, 0.0)] * 14  # invalid pairs but irrelevant since all enc=0
+        row = _make_row(enc, pairs)
+
+        res = aa.assign_repeat(row[np.newaxis, :])
+        assert res.shape == (1,)
+        assert bool(res[0])
+
+    def test_single_domain_valid_pair_true(self):
+        enc = [0] * 14
+        enc[3] = 1
+        pairs = [(0.0, 0.0)] * 14
+        pairs[3] = (0.25, 0.75)  # valid: x + y == 1 and not [0,0]/[1,1]
+        row = _make_row(enc, pairs)
+
+        res = aa.assign_repeat(row[np.newaxis, :])
+        assert bool(res[0])
+
+    @pytest.mark.parametrize("bad_pair", [(0.0, 0.0), (1.0, 1.0)])
+    def test_single_domain_invalid_pairs_false(self, bad_pair):
+        enc = [0] * 14
+        enc[5] = 1
+        pairs = [(0.25, 0.75)] * 14
+        pairs[5] = bad_pair  # explicitly invalid
+        row = _make_row(enc, pairs)
+
+        res = aa.assign_repeat(row[np.newaxis, :])
+        assert not bool(res[0])
+
+    def test_non_complementary_pair_false(self):
+        enc = [0] * 14
+        enc[2] = 1
+        pairs = [(0.25, 0.75)] * 14
+        pairs[2] = (0.3, 0.69)  # sum = 0.99 -> invalid for required domain
+        row = _make_row(enc, pairs)
+
+        res = aa.assign_repeat(row[np.newaxis, :])
+        assert not bool(res[0])
+
+    def test_multiple_domains_all_valid_true(self):
+        enc = [0] * 14
+        for i in (0, 7, 13):
+            enc[i] = 1
+        pairs = [(0.4, 0.6)] * 14  # valid everywhere
+        row = _make_row(enc, pairs)
+
+        res = aa.assign_repeat(row[np.newaxis, :])
+        assert bool(res[0])
+
+    def test_multiple_domains_one_invalid_false(self):
+        enc = [0] * 14
+        for i in (1, 4, 9):
+            enc[i] = 1
+        pairs = [(0.2, 0.8)] * 14
+        pairs[4] = (0.2, 0.5)  # clearly non-complementary (sum 0.7) -> invalid
+        row = _make_row(enc, pairs)
+
+        res = aa.assign_repeat(row[np.newaxis, :])
+        assert not bool(res[0])
+
+    def test_unencoded_domains_can_be_invalid_and_still_true(self):
+        enc = [0] * 14
+        enc[8] = 1
+        pairs = [(0.0, 0.0)] * 14          # many invalid pairs
+        pairs[8] = (0.6, 0.4)              # required domain is valid
+        row = _make_row(enc, pairs)
+
+        res = aa.assign_repeat(row[np.newaxis, :])
+        assert bool(res[0])
+
+    def test_batch_multiple_rows(self):
+        # Row A: True
+        encA = [0] * 14; encA[0] = 1
+        pairsA = [(0.3, 0.7)] * 14
+
+        # Row B: False (required domain 5 invalid)
+        encB = [0] * 14; encB[1] = 1; encB[5] = 1
+        pairsB = [(0.25, 0.75)] * 14
+        pairsB[5] = (1.0, 1.0)
+
+        # Row C: True (all required and valid)
+        encC = [1] * 14
+        pairsC = [(0.5, 0.5)] * 14
+
+        rows = np.vstack([
+            _make_row(encA, pairsA),
+            _make_row(encB, pairsB),
+            _make_row(encC, pairsC),
+        ])
+
+        res = aa.assign_repeat(rows)
+        expected = np.array([True, False, True])
+        assert res.shape == (3,)
+        assert np.array_equal(res, expected)
+
+    def test_output_shape_and_dtype(self):
+        rng = np.random.default_rng(0)
+        encs = rng.integers(0, 2, size=(5, 14))
+        rows = np.vstack([_make_row(enc, [(0.4, 0.6)] * 14) for enc in encs])
+
+        res = aa.assign_repeat(rows)
+        assert res.dtype == bool
+        assert res.shape == (5,)
+
+    def test_tolerance_within_eps_counts_as_valid(self):
+        # Assumes implementation uses isclose(..., atol=1e-8, rtol=0.0)
+        eps_edge = 1e-10
+        enc = [0] * 14
+        enc[3] = 1
+        # Pair sums to 1 within tiny eps; not exactly [0,0]/[1,1]
+        pairs = [(0.0, 0.0)] * 14
+        pairs[3] = (0.4 + eps_edge, 0.6 - eps_edge)
+        row = _make_row(enc, pairs)
+
+        res = aa.assign_repeat(row[np.newaxis, :])
+        assert bool(res[0])
+
+    def test_outside_tolerance_is_invalid(self):
+        # Assumes implementation uses isclose(..., atol ~ 1e-8, rtol=0.0)
+        enc = [0] * 14
+        enc[3] = 1
+        pairs = [(0.0, 0.0)] * 14
+        pairs[3] = (0.4, 0.61)  # sum = 1.01 -> outside atol -> invalid
+        row = _make_row(enc, pairs)
+
+        res = aa.assign_repeat(row[np.newaxis, :])
+        assert not bool(res[0])
