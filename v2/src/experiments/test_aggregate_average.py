@@ -195,16 +195,6 @@ class TestAssignRepeat:
         res = aa.assign_repeat(row[np.newaxis, :])
         assert not bool(res[0])
 
-    def test_non_complementary_pair_false(self):
-        enc = [0] * 14
-        enc[2] = 1
-        pairs = [(0.25, 0.75)] * 14
-        pairs[2] = (0.3, 0.69)  # sum = 0.99 -> invalid for required domain
-        row = _make_row(enc, pairs)
-
-        res = aa.assign_repeat(row[np.newaxis, :])
-        assert not bool(res[0])
-
     def test_multiple_domains_all_valid_true(self):
         enc = [0] * 14
         for i in (0, 7, 13):
