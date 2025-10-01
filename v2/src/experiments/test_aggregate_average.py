@@ -397,4 +397,71 @@ class TestCreateRandomEncoding:
         with pytest.raises((ValueError, AssertionError)):
             aa.create_random_encoding(row, run_type="unknown")
 
+class TestSplitEncodingAndScores:
+    @staticmethod
+    def _make_data(enc, pairs):
+        """
+        Build one row with given encodings and pairs.
+        enc: list/array of length dims (default 14)
+        pairs: list of (x, y) tuples, length == dims
+        """
+        enc = np.asarray(enc, dtype=float)
+        flat_pairs = np.asarray([v for xy in pairs for v in xy], dtype=float)
+        return np.concatenate([enc, flat_pairs])
 
+    def test_basic_split(self):
+        enc = [1, 0, 1, 0] + [0] * 10
+        pairs = [(0.4, 0.6), (0.0, 0.0), (1.0, 0.0), (0.5, 0.5)] + [(0.0, 0.0)] * 10
+        row = self._make_data(enc, pairs)
+        data = row[np.newaxis, :]
+
+        enc_out, scores_out = aa.split_encoding_and_scores(data, dims=14)
+
+        assert enc_out.shape == (1, 14)
+        assert scores_out.shape == (1, 28)
+        assert np.array_equal(enc_out[0, :4], np.array([1, 0, 1, 0]))
+
+    def test_multiple_rows(self):
+        enc1 = [1] + [0] * 13
+        pairs1 = [(0.0, 0.0)] * 14
+        enc2 = [0, 1] + [0] * 12
+        pairs2 = [(0.5, 0.5)] * 14
+
+        row1 = self._make_data(enc1, pairs1)
+        row2 = self._make_data(enc2, pairs2)
+        data = np.vstack([row1, row2])
+
+        enc_out, scores_out = aa.split_encoding_and_scores(data, dims=14)
+
+        assert enc_out.shape == (2, 14)
+        assert scores_out.shape == (2, 28)
+        assert np.array_equal(enc_out[0], np.array(enc1))
+        assert np.array_equal(enc_out[1], np.array(enc2))
+
+    def test_custom_dims(self):
+        enc = [1, 0, 1]
+        pairs = [(0.0, 0.0), (1.0, 0.0), (0.5, 0.5)]
+        row = self._make_data(enc, pairs)
+        data = row[np.newaxis, :]
+
+        enc_out, scores_out = aa.split_encoding_and_scores(data, dims=3)
+
+        assert enc_out.shape == (1, 3)
+        assert scores_out.shape == (1, 6)
+        assert np.array_equal(enc_out[0], np.array(enc))
+
+    def test_invalid_shape_raises(self):
+        bad = np.zeros((2, 10))  # too few columns
+        with pytest.raises(ValueError):
+            aa.split_encoding_and_scores(bad, dims=14)
+
+    def test_dtype_preserved(self):
+        enc = [1, 0] + [0] * 12
+        pairs = [(0.1, 0.9)] * 14
+        row = self._make_data(enc, pairs)
+        data = row[np.newaxis, :].astype(np.float32)
+
+        enc_out, scores_out = aa.split_encoding_and_scores(data, dims=14)
+
+        assert enc_out.dtype == np.float32
+        assert scores_out.dtype == np.float32

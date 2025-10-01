@@ -111,6 +111,8 @@ def split_encoding_and_scores(data: np.ndarray, dims=14) -> Tuple[np.ndarray, np
     Returns:
         Tuple[np.ndarray, np.ndarray]: (encoding, scores)
     """
+    if data.shape[1] < dims:
+        raise ValueError(f"Data must have at least {dims} columns for encoding.")
     encoding = data[:, :dims]
     scores = data[:, dims:]
     return encoding, scores
