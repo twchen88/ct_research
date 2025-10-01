@@ -86,8 +86,10 @@ def create_random_encoding(data: np.ndarray, run_type: str) -> np.ndarray:
 
     if run_type == "repeat":
         valid_mask = ~missing_mask # we want to select from non missing pairs
-    else:
+    elif run_type == "nonrepeat":
         valid_mask = missing_mask # we want to select from missing pairs
+    else:
+        raise ValueError("run_type must be either 'repeat' or 'nonrepeat'")
 
     for i in range(n_rows):
         valid_indices = np.where(valid_mask[i])[0]  # Domains with invalid score pairs

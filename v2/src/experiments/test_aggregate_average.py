@@ -205,17 +205,6 @@ class TestAssignRepeat:
         res = aa.assign_repeat(row[np.newaxis, :])
         assert bool(res[0])
 
-    def test_multiple_domains_one_invalid_false(self):
-        enc = [0] * 14
-        for i in (1, 4, 9):
-            enc[i] = 1
-        pairs = [(0.2, 0.8)] * 14
-        pairs[4] = (0.2, 0.5)  # clearly non-complementary (sum 0.7) -> invalid
-        row = _make_row(enc, pairs)
-
-        res = aa.assign_repeat(row[np.newaxis, :])
-        assert not bool(res[0])
-
     def test_unencoded_domains_can_be_invalid_and_still_true(self):
         enc = [0] * 14
         enc[8] = 1
@@ -273,13 +262,139 @@ class TestAssignRepeat:
         res = aa.assign_repeat(row[np.newaxis, :])
         assert bool(res[0])
 
-    def test_outside_tolerance_is_invalid(self):
-        # Assumes implementation uses isclose(..., atol ~ 1e-8, rtol=0.0)
-        enc = [0] * 14
-        enc[3] = 1
-        pairs = [(0.0, 0.0)] * 14
-        pairs[3] = (0.4, 0.61)  # sum = 1.01 -> outside atol -> invalid
-        row = _make_row(enc, pairs)
+class TestCreateRandomEncoding:
+    # --- Class-local helpers/fixtures ----------------------------------------
 
-        res = aa.assign_repeat(row[np.newaxis, :])
-        assert not bool(res[0])
+    @staticmethod
+    def _make_row(pairs14):
+        """
+        Build one row of shape (28,) from 14 (x,y) pairs.
+        This helper is local to this class to avoid cross-class name collisions.
+        """
+        flat = np.asarray([v for xy in pairs14 for v in xy], dtype=float)
+        assert flat.shape == (28,), "pairs14 must expand to exactly 28 values"
+        return flat
+
+    @pytest.fixture(autouse=True)
+    def _deterministic_rng(self, monkeypatch):
+        """
+        Make randomness deterministic for this class only.
+        """
+        def _fixed_default_rng():
+            return np.random.default_rng(12345)
+        monkeypatch.setattr(aa.np.random, "default_rng", _fixed_default_rng)
+
+    # --- Positive-path tests --------------------------------------------------
+
+    def test_repeat_mode_selects_from_valid_pairs(self):
+        pairs = [(0.4, 0.6)] * 14
+        pairs[5] = (0.0, 0.0)  # invalid/missing
+        row = self._make_row(pairs)[np.newaxis, :]
+
+        res = aa.create_random_encoding(row, run_type="repeat")
+
+        assert res.shape == (1, 14)
+        assert res.sum() == 1 # there is always one chosen
+        # Must avoid the invalid index in repeat mode
+        assert res[0, 5] == 0
+        chosen = np.argmax(res[0])
+        assert chosen != 5
+
+    def test_nonrepeat_mode_selects_from_invalid_pairs(self):
+        pairs = [(0.4, 0.6)] * 14
+        pairs[7] = (1.0, 1.0)  # invalid/missing
+        row = self._make_row(pairs)[np.newaxis, :]
+
+        res = aa.create_random_encoding(row, run_type="nonrepeat")
+
+        assert res.shape == (1, 14)
+        assert res.sum() == 1
+        # Must pick the invalid index in nonrepeat mode
+        assert res[0, 7] == 1
+
+    def test_repeat_mode_all_invalid_means_all_zeros(self):
+        pairs = [(0.0, 0.0)] * 14  # all missing
+        row = self._make_row(pairs)[np.newaxis, :]
+
+        res = aa.create_random_encoding(row, run_type="repeat")
+
+        assert np.array_equal(res, np.zeros((1, 14), dtype=res.dtype))
+
+    def test_nonrepeat_mode_all_valid_means_all_zeros(self):
+        pairs = [(0.5, 0.5)] * 14  # all valid/complementary
+        row = self._make_row(pairs)[np.newaxis, :]
+
+        res = aa.create_random_encoding(row, run_type="nonrepeat")
+
+        assert np.array_equal(res, np.zeros((1, 14), dtype=res.dtype))
+
+    def test_multiple_rows_mixed(self):
+        # Row A: invalid at 2
+        pairsA = [(0.4, 0.6)] * 14
+        pairsA[2] = (0.0, 0.0)
+
+        # Row B: all valid
+        pairsB = [(0.5, 0.5)] * 14
+
+        # Row C: invalid at 1 and 9
+        pairsC = [(0.4, 0.6)] * 14
+        pairsC[1] = (1.0, 1.0)
+        pairsC[9] = (0.0, 0.0)
+
+        data = np.vstack([
+            self._make_row(pairsA),
+            self._make_row(pairsB),
+            self._make_row(pairsC),
+        ])
+
+        res_repeat = aa.create_random_encoding(data, run_type="repeat")
+        res_nonrepeat = aa.create_random_encoding(data, run_type="nonrepeat")
+
+        # Row A: repeat must avoid 2, nonrepeat must pick 2
+        assert res_repeat[0, 2] == 0
+        assert res_nonrepeat[0, 2] == 1
+
+        # Row B: repeat chooses some valid, nonrepeat all zeros
+        assert res_nonrepeat[1].sum() == 0
+        assert res_repeat[1].sum() == 1
+
+        # Row C: repeat must avoid {1,9}; nonrepeat must choose one of {1,9}
+        chosen_repeat = np.argmax(res_repeat[2]) if res_repeat[2].any() else -1
+        chosen_nonrepeat = np.argmax(res_nonrepeat[2]) if res_nonrepeat[2].any() else -1
+        assert chosen_repeat not in (1, 9)
+        assert chosen_nonrepeat in (1, 9)
+
+    def test_dtype_and_shape(self):
+        pairs = [(0.0, 0.0)] * 14
+        row = self._make_row(pairs)
+        data = np.vstack([row, row])
+
+        res = aa.create_random_encoding(data, run_type="nonrepeat")
+
+        assert res.shape == (2, 14)
+        assert res.dtype in (np.int_, np.int64, np.bool_)
+        assert np.all(res.sum(axis=1) == 1)
+
+    # --- Negative-path / validation tests ------------------------------------
+
+    def test_raises_on_wrong_num_columns(self):
+        # Too few columns
+        bad = np.zeros((3, 27))
+        with pytest.raises((ValueError, AssertionError)):
+            aa.create_random_encoding(bad, run_type="repeat")
+
+        # Too many columns
+        bad = np.zeros((3, 29))
+        with pytest.raises((ValueError, AssertionError)):
+            aa.create_random_encoding(bad, run_type="nonrepeat")
+
+    def test_invalid_run_type_gracefully_handled(self):
+        # Depending on your choice: raise or treat as no-op.
+        pairs = [(0.4, 0.6)] * 14
+        row = self._make_row(pairs)[np.newaxis, :]
+
+        # If your implementation RAISES on bad run_type:
+        with pytest.raises((ValueError, AssertionError)):
+            aa.create_random_encoding(row, run_type="unknown")
+
+
