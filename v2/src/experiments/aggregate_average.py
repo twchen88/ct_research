@@ -70,10 +70,11 @@ def create_random_encoding(data: np.ndarray, run_type: str) -> np.ndarray:
     
     Parameters:
         data (np.ndarray): Array with shape (n_rows, >=42). Assumes columns 14–41 are 14 score pairs.
+        run_type (str): Either "repeat" or "nonrepeat". If "repeat", select from non-missing pairs; if "nonrepeat", select from missing pairs.
 
     Returns:
         np.ndarray: Binary array of shape (n_rows, 14) with a single 1 randomly placed per row
-                    where an invalid score pair exists. Rows with no invalids are all zeros.
+                    where an invalid score pair exists.
     """
     n_rows = data.shape[0]
     output = np.zeros((n_rows, 14), dtype=int)
