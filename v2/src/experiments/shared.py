@@ -41,7 +41,7 @@ def load_model(model_path: str, device: str) -> torch.nn.Module:
     
     return model
 
-def inference(model: torch.nn.Module, data: torch.Tensor) -> torch.Tensor:
+def inference(model: torch.nn.Module, data: torch.Tensor) -> np.ndarray:
     """
     Perform inference using the provided model and data.
 
@@ -51,20 +51,27 @@ def inference(model: torch.nn.Module, data: torch.Tensor) -> torch.Tensor:
     Returns:
         torch.Tensor: Model predictions as a PyTorch tensor.
     """
+    print("Data shape:", data.shape)
+    assert data.shape[1] == 42, "Input data must have shape (N, 42)"
+    model.eval()  # Ensure the model is in evaluation mode
     with torch.no_grad():  # Disable gradient calculation for inference
         predictions = model(data)
     return predictions.numpy()
 
 
-def add_encoding(scores : np.ndarray, encoding : np.ndarray):
+def add_encoding(scores : np.ndarray, encoding : np.ndarray) -> np.ndarray:
     """
-    Add encoding to scores and return a tensor that can be put directly into the model
+    Add encoding in front of scores and return a tensor that can be put directly into the model
 
     Parameters:
         scores (np.ndarray): of shape (N, 28)
         encoding (np.ndarray): of shape (N, 14)
+    
+    Returns:
+        np.ndarray: of shape (N, 42)
     """
-    return torch.from_numpy(np.hstack((encoding, scores))).float()
+    out = np.hstack((encoding, scores))
+    return out
 
 
 def create_single_encoding(rows, cols, column_index):

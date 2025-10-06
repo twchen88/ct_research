@@ -88,6 +88,13 @@ def aggregate_average_pipeline(test_x, test_y, model, figure_path, run_type):
         "gt": std_lst_gt
     }
 
+    if run_type == "nonrepeat":
+        for name, arr in {"best": avg_lst_best, "random": avg_lst_random, "gt": avg_lst_gt}.items():
+            arr_np = np.asarray(arr)
+            if (arr_np < 0).any():
+                idxs = np.where(arr_np < 0)[0].tolist()
+                raise AssertionError(f"Nonrepeat {name} averages contained negatives at missing_counts indices {idxs}: {arr_np[idxs]}")
+
     # plot aggregate average and save figure
     viz.plot_average_aggregate_by_missing_count(missing_counts, avg_dict, std_dict, run_type, figure_path)
 
@@ -137,10 +144,17 @@ if __name__ == "__main__":
     ## filter by session type
     repeat_mask = core.assign_repeat(test_x)
 
+    # right after parsing args
+    run_type_raw = args.run_type
+    run_type = run_type_raw.strip().lower().replace("-", "")
+    if run_type not in {"repeat", "nonrepeat"}:
+        raise ValueError("run_type must be 'repeat' or 'nonrepeat'")
+
+    is_repeat = (run_type == "repeat")
+
     # if run type is repeat, filter for only repeat sessions
     # if run type is non-repeat, filter for only non-repeat sessions
-    if run_type == "non-repeat":
-        repeat_mask = ~repeat_mask
+    mask = repeat_mask if is_repeat else ~repeat_mask
 
     test_x = test_x[repeat_mask]
     test_y = test_y[repeat_mask]

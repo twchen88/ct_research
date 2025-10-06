@@ -118,24 +118,25 @@ def split_encoding_and_scores(data: np.ndarray, dims=14) -> Tuple[np.ndarray, np
     return encoding, scores
 
 
-def find_random_predictions(model: torch.nn.Module, data: np.ndarray, run_type: str) -> Tuple[np.ndarray, torch.Tensor]:
+def find_random_predictions(model: torch.nn.Module, data: np.ndarray, run_type: str) -> Tuple[np.ndarray, np.ndarray]:
     """
     Take in a dataframe, find random predictions for the given data using the specified run type.
-    If run_type is "repeat", select from non-missing pairs; if "new", select from missing pairs.
+    If run_type is "repeat", select from non-missing pairs; if "nonrepeat", select from missing pairs.
     Returns the random encoding and the corresponding predictions.
 
     Parameters:
         model: Trained model for inference.
-        data (np.ndarray): Input data array with shape (n_rows, >=42).
-        run_type (str): Either "repeat" or "new".
+        data (np.ndarray): Input data array with shape (n_rows, ==28, scores only).
+        run_type (str): Either "repeat" or "nonrepeat".
 
     Returns:
-        Tuple[np.ndarray, torch.Tensor]: (random_encoding, predictions)
-    
+        Tuple[np.ndarray, np.ndarray]: (random_encoding, predictions)
+
     """
     random_encoding = create_random_encoding(data, run_type=run_type)
     x_random = add_encoding(data, random_encoding)
-    predictions = inference(model, x_random)
+    assert x_random.shape[1] == 42, "Input to model must have shape (N, 42)"
+    predictions = inference(model, torch.from_numpy(x_random).float())
     return random_encoding, predictions
 
 
@@ -159,8 +160,12 @@ def predict_all_domains(model: torch.nn.Module, x: np.ndarray, y: np.ndarray, lo
     # loop through fourteen domains, get the predictions and store the predictions for that domain only in a list
     for domain in loop_range:
         single_encoding = create_single_encoding(rows, cols, domain)
+        print("single encoding: ", single_encoding.shape)
         x_single = add_encoding(x, single_encoding)
-        single_prediction = inference(model, x_single)
+        print("x: ", x.shape)
+        print("x single: ", x_single.shape)
+        single_prediction = inference(model, torch.from_numpy(x_single).float())
+        print("single prediction: ", single_prediction.shape)
         prediction_list.append(single_prediction[:, domain])
     
     matrix = np.column_stack(prediction_list)
