@@ -542,10 +542,8 @@ def compute_avg_std_selected(
         print(f"Example indices (row, col): {list(zip(rows[:10], cols[:10]))}")
     # --- compute improvement
     # If nonrepeat: baseline is 0 for missing (or for all; both yield fut_f when cur is NaN)
-    if nonrepeat_baseline_zero:
-        improvement = np.where(np.isnan(cur_f), fut_f, fut_f - cur_f)
-    else:
-        improvement = np.where(np.isnan(cur_f), fut_f, fut_f - cur_f)
+    # improvement = np.where(np.isnan(cur_f), fut_f, fut_f - cur_f)
+    improvement = fut_f ## just future scores, hardcoding baseline=0 for nonrepeat
 
     # --- pick only encoded elements
     selected_vals = improvement[enc_f]  # 1D: all True positions flattened
