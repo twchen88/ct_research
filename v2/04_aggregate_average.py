@@ -84,9 +84,12 @@ def aggregate_average_pipeline(test_x, test_y, model, figure_path, run_type):
             f"(showing up to 10). min={arr.min():.6g}"
         )
 
+    print("Calculating averages by missing counts...")
+    print("Going through best strategy...")
     avg_lst_best, std_lst_best = core.average_scores_by_missing_counts(missing_counts, cur_score_gt, future_scores_best, best_encoding)
+    print("Going through random strategy...")
     avg_lst_random, std_lst_random = core.average_scores_by_missing_counts(missing_counts, cur_score_gt, future_scores_random, random_encoding)
-
+    print("Going through ground truth...")
     avg_lst_gt, std_lst_gt = core.average_scores_by_missing_counts(missing_counts, cur_score_gt, future_score_gt, gt_encoding)
 
     avg_dict = {

@@ -290,6 +290,33 @@ def extract_score_pairs(data: np.ndarray) -> np.ndarray:
     return data.reshape(-1, 14, 2)  # Reshape to (n_rows, 14, 2)
 
 
+def decode_missing_indicator(encoded: np.ndarray) -> np.ndarray:
+    """
+    Vectorized reverse of create_missing_indicator().
+    Input:  (n, 28) where each pair [a,b] is either [x, 1-x] (observed) or [0,0]/[1,1] (missing).
+    Output: (n, 14) original scores, with np.nan for missing.
+    """
+    if encoded.ndim != 2:
+        raise ValueError("encoded must be a 2D array")
+    n, m = encoded.shape
+    if m % 2 != 0:
+        raise ValueError(f"Expected even number of columns, got {m}")
+    if m != 28:
+        # Not strictly required, but helps catch shape drift
+        raise ValueError(f"Expected 28 columns (14 pairs), got {m}")
+
+    pairs = encoded.reshape(n, m // 2, 2)           # (n, 14, 2)
+    a = pairs[..., 0].astype(float)                  # first of each pair (the original value if observed)
+    b = pairs[..., 1]
+
+    # Missing if pair is [0,0] or [1,1]
+    eps = 1e-12
+    missing = (np.abs(a - b) < eps) & ((np.abs(a) < eps) | (np.abs(a - 1) < eps))
+
+    decoded = a.copy()
+    decoded[missing] = np.nan
+    return decoded
+
 def overall_avg_improvement_with_std(data: np.ndarray, pred_score: np.ndarray) -> Tuple[np.floating[Any] | Literal[0], np.floating[Any] | Literal[0]]:
     """
     Given the an array of encoding and scores combined as well as an array of the predicted scores, 
@@ -303,7 +330,7 @@ def overall_avg_improvement_with_std(data: np.ndarray, pred_score: np.ndarray) -
         Tuple[np.floating[Any], np.floating[Any]]: (average improvement, standard deviation)
     """
     encoding, cur_score = split_encoding_and_scores(data)
-    cur_score = cur_score[::2]
+    cur_score = decode_missing_indicator(cur_score)
 
     # Compute improvement
     improvement = (pred_score - cur_score)[encoding == 1]
@@ -423,7 +450,7 @@ def compute_averages_and_stds(cur_scores: np.ndarray, future_scores: np.ndarray,
     Returns:
         Tuple[float, float]: (average improvement, standard deviation of improvement)
     """
-    difference = future_scores - cur_scores
+    difference = np.where(np.isnan(cur_scores), future_scores, future_scores - cur_scores)
     difference_filtered = filter_with_masks(difference, masks)
 
     if np.any(difference_filtered < 0):
@@ -468,17 +495,87 @@ def evaluate_error_by_missing_count(test_x, test_y, test_predictions, dims=14):
     return missing_counts, mean_errors_list, ground_truth_std_list, ground_truth_dict
 
 
+def compute_avg_std_selected(
+    cur_scores: np.ndarray,        # shape (N, 14)
+    future_scores: np.ndarray,     # shape (N, 14)
+    row_mask: np.ndarray,          # shape (N,) -> from filter_sessions_by_missing_count
+    encoding_mask: np.ndarray,     # shape (N, 14) -> True where chosen domain(s), i.e., encoding==1
+    nonrepeat_baseline_zero: bool = True
+) -> Tuple[np.floating[Any] | Literal[0], np.floating[Any] | Literal[0]]:
+    """
+    1) Filter rows (sessions) by row_mask.
+    2) Compute improvements element-wise:
+         - if nonrepeat_baseline_zero: improvement = future (baseline 0 when current is NaN)
+         - else: improvement = future - current, but if current is NaN treat as 0 => improvement = future
+    3) Select ONLY elements indicated by encoding_mask in the filtered rows.
+    4) Return mean/std over those selected elements.
+    """
+    # --- shape checks
+    cur_scores = np.asarray(cur_scores, dtype=float)
+    future_scores = np.asarray(future_scores, dtype=float)
+    row_mask = np.asarray(row_mask, dtype=bool)
+    encoding_mask = np.asarray(encoding_mask, dtype=bool)
+
+    N, C1 = cur_scores.shape
+    N2, C2 = future_scores.shape
+    if cur_scores.ndim != 2 or future_scores.ndim != 2 or C1 != C2:
+        raise ValueError(f"cur_scores {cur_scores.shape} and future_scores {future_scores.shape} must be 2D with same second dim")
+    if row_mask.shape != (N,):
+        raise ValueError(f"row_mask must be shape {(N,)}, got {row_mask.shape}")
+    if encoding_mask.shape != (N, C1):
+        raise ValueError(f"encoding_mask must be shape {(N, C1)}, got {encoding_mask.shape}")
+
+    # --- filter rows
+    cur_f = cur_scores[row_mask]        # (K, 14)
+    fut_f = future_scores[row_mask]     # (K, 14)
+    enc_f = encoding_mask[row_mask]     # (K, 14)
+
+    # --- compute improvement
+    # If nonrepeat: baseline is 0 for missing (or for all; both yield fut_f when cur is NaN)
+    if nonrepeat_baseline_zero:
+        improvement = np.where(np.isnan(cur_f), fut_f, fut_f - cur_f)
+    else:
+        improvement = np.where(np.isnan(cur_f), fut_f, fut_f - cur_f)
+
+    # --- pick only encoded elements
+    selected_vals = improvement[enc_f]  # 1D: all True positions flattened
+
+    # Optional: sanity checks per row (one-hot expectation)
+    # rows_with_any = enc_f.any(axis=1).sum()
+    # rows_with_none = (~enc_f.any(axis=1)).sum()
+    # rows_with_multi = (enc_f.sum(axis=1) > 1).sum()
+
+    # --- warn on unexpected negatives (beyond tiny FP noise)
+    if np.any(selected_vals < -1e-12):
+        print("Warning: selected improvements contain negative values.")
+
+    return safe_mean_std(selected_vals)
+
+
 def average_scores_by_missing_counts(missing_counts, current_scores, future_scores, encoding):
     avg_lst = []
     std_lst = []
     
     for n in missing_counts:
         print(f"Computing averages for missing count: {n}")
-        missing_mask = filter_sessions_by_missing_count(current_scores, n)
-        print(f"Number of sessions with {n} missing domains: {np.sum(missing_mask)}")
         
-        masks = [missing_mask, (encoding[missing_mask] == 1)]
-        avg, std = compute_averages_and_stds(current_scores[:, ::2], future_scores, masks)
+
+        # 1) Build the row mask for a given n (sessions with exactly n missing)
+        row_mask = filter_sessions_by_missing_count(current_scores, n)
+        print(f"Number of sessions with {n} missing domains: {np.sum(row_mask)}")
+
+        # 2) Build the element-wise encoding mask (same shape as decoded/score arrays)
+        encoding_mask = (encoding == 1)  # shape (N, 14)
+
+        # 3) Make sure your scores are the decoded (N,14) arrays
+        decoded_current_scores = decode_missing_indicator(current_scores)  # shape (N, 14)
+        avg, std = compute_avg_std_selected(
+            cur_scores=decoded_current_scores,      # (N,14)
+            future_scores=future_scores,    # (N,14)
+            row_mask=row_mask,                      # (N,)
+            encoding_mask=encoding_mask,          # (N,14)
+            nonrepeat_baseline_zero=True            # set True for nonrepeat runs
+        )
 
         avg_lst.append(avg)
         std_lst.append(std)
