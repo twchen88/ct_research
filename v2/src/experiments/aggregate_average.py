@@ -399,6 +399,15 @@ def filter_with_masks(data: np.ndarray, masks: List[np.ndarray]) -> np.ndarray:
     return data
 
 
+def safe_mean_std(x: np.ndarray) -> Tuple[np.floating[Any] | Literal[0], np.floating[Any] | Literal[0]]:
+    x = np.asarray(x, dtype=float)
+    if x.size == 0:
+        return np.float64(np.nan), np.float64(np.nan)
+    if x.size == 1:
+        return np.float64(x[0]), np.float64(np.nan)
+    return np.float64(np.mean(x)), np.float64(np.std(x, ddof=1))
+
+
 def compute_averages_and_stds(cur_scores: np.ndarray, future_scores: np.ndarray, masks: List[np.ndarray]) -> Tuple[np.floating[Any] | Literal[0], np.floating[Any] | Literal[0]]:
     """
     Computes the average and standard deviation of the improvements between current and future scores,
@@ -417,8 +426,10 @@ def compute_averages_and_stds(cur_scores: np.ndarray, future_scores: np.ndarray,
     difference = future_scores - cur_scores
     difference_filtered = filter_with_masks(difference, masks)
 
-    average = np.mean(difference_filtered)
-    std_dev = np.std(difference_filtered)
+    if np.any(difference_filtered < 0):
+        print("Warning: difference_filtered contains negative values.")
+
+    average, std_dev = safe_mean_std(difference_filtered)
 
     return average, std_dev
 
