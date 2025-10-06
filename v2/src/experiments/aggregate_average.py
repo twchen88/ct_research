@@ -315,6 +315,7 @@ def decode_missing_indicator(encoded: np.ndarray) -> np.ndarray:
 
     decoded = a.copy()
     decoded[missing] = np.nan
+    assert decoded.shape == (n, 14), f"Expected shape (n,14), got {decoded.shape}"
     return decoded
 
 def overall_avg_improvement_with_std(data: np.ndarray, pred_score: np.ndarray) -> Tuple[np.floating[Any] | Literal[0], np.floating[Any] | Literal[0]]:
@@ -530,6 +531,15 @@ def compute_avg_std_selected(
     fut_f = future_scores[row_mask]     # (K, 14)
     enc_f = encoding_mask[row_mask]     # (K, 14)
 
+
+    violations = (enc_f == 1) & ~np.isnan(cur_f)
+
+    if np.any(violations):
+        rows, cols = np.where(violations)
+        print(
+            f"Warning: Found {len(rows)} violations where encoding==1 but current score is not NaN."
+        )
+        print(f"Example indices (row, col): {list(zip(rows[:10], cols[:10]))}")
     # --- compute improvement
     # If nonrepeat: baseline is 0 for missing (or for all; both yield fut_f when cur is NaN)
     if nonrepeat_baseline_zero:
@@ -558,16 +568,12 @@ def average_scores_by_missing_counts(missing_counts, current_scores, future_scor
     
     for n in missing_counts:
         print(f"Computing averages for missing count: {n}")
-        
 
-        # 1) Build the row mask for a given n (sessions with exactly n missing)
         row_mask = filter_sessions_by_missing_count(current_scores, n)
         print(f"Number of sessions with {n} missing domains: {np.sum(row_mask)}")
 
-        # 2) Build the element-wise encoding mask (same shape as decoded/score arrays)
         encoding_mask = (encoding == 1)  # shape (N, 14)
 
-        # 3) Make sure your scores are the decoded (N,14) arrays
         decoded_current_scores = decode_missing_indicator(current_scores)  # shape (N, 14)
         avg, std = compute_avg_std_selected(
             cur_scores=decoded_current_scores,      # (N,14)

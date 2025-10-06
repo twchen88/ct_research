@@ -83,6 +83,7 @@ def aggregate_average_pipeline(test_x, test_y, model, figure_path, run_type):
             f"{name} has {neg_idx.size} negative values at indices {neg_idx.tolist()[:10]} "
             f"(showing up to 10). min={arr.min():.6g}"
         )
+    print("Sanity check passed: No negative future scores found.==================================")
 
     print("Calculating averages by missing counts...")
     print("Going through best strategy...")
