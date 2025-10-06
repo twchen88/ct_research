@@ -462,7 +462,9 @@ def average_scores_by_missing_counts(missing_counts, current_scores, future_scor
     std_lst = []
     
     for n in missing_counts:
+        print(f"Computing averages for missing count: {n}")
         missing_mask = filter_sessions_by_missing_count(current_scores, n)
+        print(f"Number of sessions with {n} missing domains: {np.sum(missing_mask)}")
         
         masks = [missing_mask, (encoding[missing_mask] == 1)]
         avg, std = compute_averages_and_stds(current_scores[:, ::2], future_scores, masks)
