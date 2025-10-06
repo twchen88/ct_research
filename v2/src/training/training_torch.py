@@ -1,232 +1,239 @@
-import torch
-from tqdm import tqdm
-import numpy as np
-import pandas as pd
 
+import torch
+import numpy as np
+from tqdm import tqdm
+from typing import Callable, Tuple, Optional, List
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader
-from typing import Callable, Tuple
 
-from src.training.model_torch import Predictor
+# =====================================================
+# Custom masked MSE via torch.autograd.Function
+# =====================================================
 
-"""
-src/training/training_torch.py
-------------------------
-This module provides functions for training a PyTorch model, including data preparation from model-ready format data, training and validation loops,
-and custom dataset class for handling input and target data.
-"""
+from typing import Optional, Tuple
 
+class _MaskedMSEFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(
+        ctx,
+        input: torch.Tensor,
+        target: torch.Tensor,
+        mask: torch.Tensor,
+        eps: float = 1e-8,
+    ) -> torch.Tensor:
+        """Forward: MSE computed only over positions where mask==1, normalized by mask.sum()."""
+        ctx.save_for_backward(input, target, mask)
+        ctx.eps = eps
+        diff = (input - target) ** 2              # (B, 14)
+        masked = diff * mask                      # zero out missing
+        denom = torch.clamp(mask.sum(), min=eps)  # scalar
+        return masked.sum() / denom
+
+    @staticmethod
+    def backward(  # pyright: ignore[reportIncompatibleMethodOverride]
+        ctx, *grad_outputs: torch.Tensor
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
+        (grad_output,) = grad_outputs  # single-output function
+        input, target, mask = ctx.saved_tensors
+        denom = torch.clamp(mask.sum(), min=ctx.eps)
+        grad_input = 2.0 * (input - target) * mask / denom
+        grad_input = grad_input * grad_output  # chain rule
+        # grads for (input, target, mask, eps)
+        return grad_input, None, None, None  # pyright: ignore[reportReturnType]
+
+
+def masked_mse_loss(pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    return _MaskedMSEFunction.apply(pred, target, mask)
+
+
+# =====================================================
+# Public loss API (compatible with 03_train_predictor.py)
+# =====================================================
+
+def MSE(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    return torch.mean((pred - target) ** 2)
+
+def MAE(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    return torch.mean(torch.abs(pred - target))
+
+def get_loss_function(loss_function_name: str) -> Callable:
+    """Return a callable loss function.
+    The returned callable has attribute `requires_mask: bool` so training/eval know whether to build masks.
+    """
+    name = loss_function_name.lower()
+    if name == "mse":
+        fn = MSE
+        setattr(fn, "requires_mask", False)
+        return fn
+    if name == "mae":
+        fn = MAE
+        setattr(fn, "requires_mask", False)
+        return fn
+    if name in ("masked_mse", "masked-mse", "masked"):
+        def _call(pred: torch.Tensor, target: torch.Tensor, *, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+            if mask is None:
+                raise ValueError("masked_mse requires a mask tensor of shape (B, 14).");
+            return masked_mse_loss(pred, target, mask)
+        setattr(_call, "requires_mask", True)
+        return _call
+    raise ValueError(f"Unsupported loss function: {loss_function_name}")
+
+
+# =====================================================
+# Mask utilities (from inputs)
+# =====================================================
+
+def compute_non_missing_mask_from_inputs(inputs: torch.Tensor) -> torch.Tensor:
+    """Compute (B,14) mask from inputs (B,42).
+    For each domain j, pair = (inputs[:, 14+2*j], inputs[:, 14+2*j+1]).
+    Mark valid=1 if pair != (0,0) and != (1,1), else 0.
+    Returns a float mask (same dtype/device as inputs).
+    """
+    if inputs.dim() != 2 or inputs.size(1) != 42:
+        raise ValueError("Expected inputs shape (B, 42).");
+    B = inputs.size(0)
+    mask = torch.ones((B, 14), dtype=inputs.dtype, device=inputs.device)
+    for j in range(14):
+        base = 14 + 2*j
+        a = inputs[:, base]
+        b = inputs[:, base + 1]
+        valid = ~((a == 0) & (b == 0)) & ~((a == 1) & (b == 1))
+        mask[:, j] = valid.to(inputs.dtype)
+    return mask
+
+
+# =====================================================
+# Data helpers expected by 03_train_predictor.py
+# =====================================================
 
 class custom_dataset(Dataset):
-    """
-    Custom dataset class for handling input and target data in PyTorch.
-    This class inherits from torch.utils.data.Dataset and implements the necessary methods to work with DataLoader.
-    """
-    def __init__(self, data: torch.Tensor, target: torch.Tensor):
-        super().__init__()
-        self.data = data
-        self.target = target
+    """Simple dataset wrapper for (X, y) tensors."""
+    def __init__(self, X: torch.Tensor, y: torch.Tensor):
+        assert X.shape[0] == y.shape[0], "X and y must have same number of rows"
+        self.X = X
+        self.y = y
 
-    def __len__(self):
-        return self.data.shape[0]
+    def __len__(self) -> int:
+        return self.X.shape[0]
 
-    def __getitem__(self, index):
-        return self.data[index, :], self.target[index, :]
+    def __getitem__(self, idx: int):
+        return self.X[idx], self.y[idx]
 
-def get_dataloader(dataset: Dataset, batch_size: int, suffle: bool) -> DataLoader:
-    """
-    Create a DataLoader for the given dataset.
-    
-    Parameters:
-        dataset (Dataset): The dataset to create a DataLoader for.
-        batch_size (int): The number of samples per batch.
-        suffle (bool): Whether to shuffle the data at every epoch.
-    
-    Returns:
-        DataLoader: A DataLoader instance for the dataset.
-    """
-    return DataLoader(dataset, batch_size=batch_size, shuffle=suffle, num_workers=0, pin_memory=True)
 
-def split_train_test(data: np.ndarray, ratio: float = 0.25, n_samples=None) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Split the data into training and testing sets.
-    
-    Parameters:
-        data (np.ndarray): The input data to be split.
-        ratio (float): The proportion of the dataset to include in the test split.
-        n_samples (int, optional): If specified, limit the number of samples in both train and test sets.
-    
-    Returns:
-        tuple: A tuple containing the training and testing datasets as numpy arrays.
-    """
-    train_data, test_data = train_test_split(data, test_size=ratio)
+def get_dataloader(dataset: Dataset, batch_size: int, suffle: bool = True) -> DataLoader:
+    """Return a DataLoader. Note: the parameter name is `suffle` (as used by 03_train_predictor.py)."""
+    return DataLoader(dataset, batch_size=batch_size, shuffle=bool(suffle))
 
-    if n_samples is not None: # if n_samples is specified, limit the number of samples
-        train_data = train_data[:n_samples].copy()
-        test_data = test_data[:n_samples].copy()
-    
-    return train_data, test_data
+
+def split_train_test(data: np.ndarray, ratio: float = 0.2, n_samples: Optional[int] = None) -> tuple[np.ndarray, np.ndarray]:
+    """Split numpy array into (train, test) with given ratio. Optionally subsample first."""
+    if n_samples is not None and n_samples > 0 and n_samples < data.shape[0]:
+        data = data[:n_samples].copy()
+    train, test = train_test_split(data, test_size=ratio, shuffle=True, random_state=42)
+    return train, test
 
 
 def split_input_target(data: np.ndarray, dims: int = 42) -> Tuple[torch.Tensor, torch.Tensor]:
-    """
-    Split the full data into input and target data.
-
-    Parameters:
-        data (np.ndarray): The full dataset containing both input and target data.
-        dims (int): The number of dimensions for the input data. The target data will be the remaining dimensions.
-    
-    Returns:
-        Tuple[torch.Tensor, torch.Tensor]: A tuple containing two tensors: input data and target data.
-    The input data will have the first `dims` columns, and the target data will have the remaining columns.
+    """Split full data (numpy) into input and target tensors.
+    Inputs: first `dims` columns. Targets: remaining columns.
     """
     input_data = data[:, :dims]
     target_data = data[:, dims:]
-    return torch.from_numpy(input_data), torch.from_numpy(target_data)
+    return torch.from_numpy(input_data).float(), torch.from_numpy(target_data).float()
 
 
-def evaluate_loss(model, data_loader, loss_function):
-    """
-    Given a model and a DataLoader, evaluate the loss on the dataset.
+# =====================================================
+# Optimizer
+# =====================================================
 
-    Parameters:
-        model (Predictor, as defined in model_torch.py): The model to evaluate.
-        data_loader (DataLoader): The DataLoader containing the dataset.
-        loss_function (Callable): The loss function to use for evaluation.
-    
-    Returns:
-        float: The average loss over the dataset.
-    """
-    model.eval()
-    total_loss = 0.0
-    with torch.no_grad():
-        for inputs, targets in data_loader:
-            outputs = model(inputs)
-            loss = loss_function(outputs, targets)
-            total_loss += loss.item() * inputs.size(0)  # scale by batch size
-    return total_loss / len(data_loader.dataset)
-
-
-def train_one_epoch(model: Predictor, data_loader: DataLoader, loss_function: Callable, optimizer: torch.optim.Optimizer) -> float:
-    """
-    Train the model for one epoch using the provided DataLoader, loss function, and optimizer.
-    Returns the average loss for the epoch over all samples in the DataLoader.
-
-    Parameters:
-        model (Predictor): The model to train.
-        data_loader (DataLoader): The DataLoader containing the training dataset.
-        loss_function (Callable): The loss function to use for training.
-        optimizer (torch.optim.Optimizer): The optimizer to use for updating model parameters.
-
-    Returns:
-        float: The average loss for the epoch.
-    """
-    
-    model.train()
-    running_loss = 0.0
-    total_samples = 0
-
-    for batch_x, batch_y in data_loader:
-        optimizer.zero_grad()
-        output = model(batch_x)
-
-        # Reshape only if needed and safe
-        if batch_y.shape != output.shape:
-            batch_y = batch_y.view_as(output)
-
-        loss = loss_function(output, batch_y)
-        loss.backward()
-        optimizer.step()
-
-        running_loss += loss.item() * batch_x.size(0)
-        total_samples += batch_x.size(0)
-
-    return running_loss / total_samples
-
-
-def train_model(model: Predictor, train_data_loader: DataLoader, val_data_loader: DataLoader, epochs: int, optimizer: torch.optim.Optimizer,
-    loss_function: Callable, device: str) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Train the model for a specific number of epochs, calling the train_one_epoch function for each epoch.
-    Keeps track of training and validation loss history and returns them.
-
-    Parameters:
-        model (Predictor): The model to train.
-        train_data_loader (DataLoader): The DataLoader for the training dataset.
-        val_data_loader (DataLoader): The DataLoader for the validation dataset.
-        epochs (int): The number of epochs to train the model.
-        optimizer (torch.optim.Optimizer): The optimizer to use for training.
-        loss_function (Callable): The loss function to use for training and validation.
-        device (str): The device to run the training on ('cpu' or 'cuda'), currently not used.
-
-    Returns:
-        Tuple[np.ndarray, np.ndarray]: Two numpy arrays containing the training and validation loss history.
-    """
-
-    train_loss_history = np.zeros(epochs + 1)
-    val_loss_history = np.zeros(epochs + 1)
-
-    # Initial loss before training
-    train_loss_history[0] = (evaluate_loss(model, train_data_loader, loss_function))
-    val_loss_history[0] = (evaluate_loss(model, val_data_loader, loss_function))
-
-    for epoch in tqdm(range(1, epochs + 1), desc="Training Epochs", unit="epoch"):
-        train_loss = train_one_epoch(model, train_data_loader, loss_function, optimizer)
-        val_loss = evaluate_loss(model, val_data_loader, loss_function)
-
-        train_loss_history[epoch] = train_loss
-        val_loss_history[epoch] = val_loss
-
-    return train_loss_history, val_loss_history
-
-
-def MSE(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-    """
-    MSE loss function that computes the mean squared error between predictions and targets.
-    """
-    return torch.mean((predictions - targets) ** 2)
-
-
-def MAE(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-    """
-    MAE loss function that computes the mean squared error between predictions and targets.
-    """
-    return torch.mean(torch.abs((predictions - targets)))
-
-
-def get_optimizer(optimizer_name: str, learning_rate: float, model: Predictor) -> torch.optim.Optimizer:
-    """
-    Get the optimizer based on the specified name and learning rate.
-    
-    Parameters:
-        optimizer_name (str): The name of the optimizer to use (e.g., 'adam', 'sgd').
-        learning_rate (float): The learning rate for the optimizer.
-        model (Predictor): The model for which the optimizer is being created.
-    
-    Returns:
-        torch.optim.Optimizer: An instance of the specified optimizer.
-    """
-    if optimizer_name.lower() == 'adam':
+def get_optimizer(optimizer_name: str, learning_rate: float, model: torch.nn.Module):
+    name = optimizer_name.lower()
+    if name == "adam":
         return torch.optim.Adam(model.parameters(), lr=learning_rate)
-    elif optimizer_name.lower() == 'sgd':
-        return torch.optim.SGD(model.parameters(), lr=learning_rate)
-    else:
-        raise ValueError(f"Unsupported optimizer: {optimizer_name}")
-    
+    if name == "sgd":
+        return torch.optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
+    if name in ("adamw",):
+        return torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    raise ValueError(f"Unsupported optimizer: {optimizer_name}")
 
-def get_loss_function(loss_function_name: str) -> Callable:
-    """
-    Get the loss function based on the specified name.
-    
-    Parameters:
-        loss_function_name (str): The name of the loss function to use (e.g., 'mse', 'mae').
-    
-    Returns:
-        Callable: A callable loss function.
-    """
-    if loss_function_name.lower() == 'mse':
-        return MSE
-    elif loss_function_name.lower() == 'mae':
-        return MAE
+
+# =====================================================
+# Training / Validation loops (used by 03_train_predictor.py)
+# =====================================================
+
+def _step_loss(
+    model: torch.nn.Module,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    loss_function: Callable,
+) -> tuple[torch.Tensor, float]:
+    """Compute loss for a batch, returning (loss_tensor, weight_for_averaging)."""
+    outputs = model(inputs)
+    requires_mask = bool(getattr(loss_function, "requires_mask", False))
+    if requires_mask:
+        mask = compute_non_missing_mask_from_inputs(inputs)
+        loss = loss_function(outputs, targets, mask=mask)
+        weight = float(mask.sum().item())
     else:
-        raise ValueError(f"Unsupported loss function: {loss_function_name}")
+        loss = loss_function(outputs, targets)
+        weight = float(inputs.size(0) * outputs.size(1))
+    return loss, max(weight, 1.0)  # ensure non-zero
+
+
+def train_model(
+    model: torch.nn.Module,
+    train_data_loader: DataLoader,
+    val_data_loader: DataLoader,
+    epochs: int,
+    optimizer,
+    loss_function: Callable,
+    device: str = "cpu",
+):
+    """Train model for `epochs`, returning (train_loss_history, val_loss_history)."""
+    train_hist: List[float] = []
+    val_hist: List[float] = []
+
+    model.to(device)
+    for epoch in range(epochs):
+        model.train()
+        running, weight_sum = 0.0, 0.0
+        for inputs, targets in tqdm(train_data_loader, desc=f"Epoch {epoch+1}/{epochs} [train]"):
+            inputs = inputs.to(device=device, dtype=torch.float32, non_blocking=True)
+            targets = targets.to(device=device, dtype=torch.float32, non_blocking=True)
+            optimizer.zero_grad(set_to_none=True)
+            loss, w = _step_loss(model, inputs, targets, loss_function)
+            loss.backward()
+            optimizer.step()
+            running += float(loss.item()) * w
+            weight_sum += w
+        train_loss = running / max(weight_sum, 1e-8)
+        train_hist.append(train_loss)
+
+        # validation
+        model.eval()
+        running, weight_sum = 0.0, 0.0
+        with torch.no_grad():
+            for inputs, targets in tqdm(val_data_loader, desc=f"Epoch {epoch+1}/{epochs} [valid]"):
+                inputs = inputs.to(device=device, dtype=torch.float32, non_blocking=True)
+                targets = targets.to(device=device, dtype=torch.float32, non_blocking=True)
+                loss, w = _step_loss(model, inputs, targets, loss_function)
+                running += float(loss.item()) * w
+                weight_sum += w
+        val_loss = running / max(weight_sum, 1e-8)
+        val_hist.append(val_loss)
+
+    return train_hist, val_hist
+
+
+@torch.no_grad()
+def evaluate_loss(model: torch.nn.Module, data_loader: DataLoader, loss_function: Callable) -> float:
+    """Evaluate average loss on a dataloader. Respects masked vs unmasked losses."""
+    model.eval()
+    running, weight_sum = 0.0, 0.0
+    for inputs, targets in data_loader:
+        inputs = inputs.to(device=next(model.parameters()).device, dtype=torch.float32, non_blocking=True)
+        targets = targets.to(device=inputs.device, dtype=torch.float32, non_blocking=True)
+        loss, w = _step_loss(model, inputs, targets, loss_function)
+        running += float(loss.item()) * w
+        weight_sum += w
+    return running / max(weight_sum, 1e-8)

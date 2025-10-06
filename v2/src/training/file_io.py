@@ -1,114 +1,108 @@
-import torch
+import os
 import shutil
 import yaml
 import numpy as np
-
+import torch
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, Any, Union
 
-"""
-src/training/file_io.py
-------------------------
-This module provides functions for reading and writing data, models, metrics, and configuration files.
-It includes functions to load data from a specified path, save models and metrics, copy configuration files, and save metadata about the training process.
-"""
-
-## read functions
-def load_data(path: str) -> np.ndarray:
-    """
-    Load data from the specified path.
-    
-    Parameters:
-        path (str): The path to the data file.
-        
-    Returns:
-        np.ndarray: The loaded data as a NumPy array.
-    """
-    if not Path(path).exists():
-        raise FileNotFoundError(f"The specified path does not exist: {path}")
-    
-    data = np.load(path)
-    print(f"Data loaded from {path} with shape {data.shape}")
-    return data
+# src/training/file_io.py
+# -----------------------
+# Utilities used by 03_train_predictor.py for loading data and saving artifacts.
 
 
-## write functions
-def save_model(model, path: str):
+# ---------- Read ----------
+
+def load_data(path: Union[str, os.PathLike]) -> np.ndarray:
+    """Load model-ready data from disk.
+    Supports .npy (NumPy array) and .npz with a 'data' key.
+    Returns a NumPy ndarray.
     """
-    Save the model to the specified path.
-    
-    Parameters:
-        model: The model to save.
-        path (str): The path where the model will be saved.
-    """
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), path)
-    print(f"Model saved to {path}")
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(f"Data file not found: {p}")
+    if p.suffix.lower() == ".npy":
+        arr = np.load(p)
+        if not isinstance(arr, np.ndarray):
+            raise ValueError(".npy did not contain a NumPy array")
+        return arr
+    if p.suffix.lower() == ".npz":
+        with np.load(p) as z:
+            if "data" in z:
+                return z["data"]
+            # If unknown keys, pick the first array
+            for k in z.files:
+                return z[k]
+        raise ValueError(".npz has no arrays")
+    raise ValueError(f"Unsupported data format: {p.suffix}")
 
 
-def save_metrics(metrics: dict, path: str):
-    """
-    Save the metrics to the specified path.
-    
-    Parameters:
-        metrics (dict): The metrics to save.
-        path (str): The path where the metrics will be saved.
-    """
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'w') as f:
-        yaml.dump(metrics, f, default_flow_style=False)
-    print(f"Metrics saved to {path}")
+# ---------- Write ----------
+
+def save_model(model: torch.nn.Module, path: Union[str, os.PathLike]) -> str:
+    """Save the model state dict to a .pt file."""
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(model.state_dict(), p)
+    print(f"Model saved to {p}")
+    return str(p)
 
 
-def save_results(results: dict, path: str):
-    """
-    Save the results to the specified path.
-    
-    Parameters:
-        results (dict): The results to save.
-        path (str): The path where the results will be saved.
-    """
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    np.savez(path, **results)
-    print(f"Results saved to {path}")
+def copy_config_file(src: Union[str, os.PathLike], dst: Union[str, os.PathLike]) -> str:
+    """Copy the config YAML file into the run directory."""
+    src_p, dst_p = Path(src), Path(dst)
+    dst_p.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(src_p, dst_p)
+    print(f"Config copied to {dst_p}")
+    return str(dst_p)
 
 
-def copy_config_file(source: str, target: str):
-    """
-    Copy the configuration file from source to target.
-    
-    Parameters:
-        source (str): The path to the source configuration file.
-        target (str): The path where the configuration file will be copied.
-    """
-    Path(target).parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy(source, target)
-    print(f"Configuration file copied from {source} to {target}")
+def save_metrics(metrics: Dict[str, Any], path: Union[str, os.PathLike]) -> str:
+    """Save scalar metrics as YAML (e.g., test_loss, test_error)."""
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with open(p, "w") as f:
+        yaml.safe_dump(metrics, f, sort_keys=False)
+    print(f"Metrics saved to {p}")
+    return str(p)
 
 
-def save_metadata(run_desc: str, git_commit_hash: str, input_path: str, output_path: str, config_path: str, metrics_path: str, plots_path: str):
+def save_results(results: Dict[str, Any], path: Union[str, os.PathLike]) -> str:
+    """Save arrays and histories as a .npz bundle.
+    Expected keys in 'results' may include: train_loss_history (list[float]),
+    val_loss_history (list[float]), test_x, test_y, test_predictions (ndarrays).
     """
-    Save metadata about the training process.
-    
-    Parameters:
-        input_path (str): The path to the input data.
-        output_path (str): The path to the output data.
-        config_path (str): The path to the configuration file used for training.
-        metrics_path (str): The path to the saved metrics.
-    """
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    # Convert any lists to numpy arrays defensively
+    pack = {}
+    for k, v in results.items():
+        if isinstance(v, list):
+            pack[k] = np.array(v)
+        else:
+            pack[k] = v
+    np.savez_compressed(p, **pack)
+    print(f"Results saved to {p}")
+    return str(p)
+
+
+def save_metadata(*, run_desc: str, git_commit_hash: str, input_path: str, output_path: str,
+                  config_path: str, metrics_path: str, plots_path: str) -> Dict[str, Any]:
+    """Write a metadata.yaml into the run directory so a single file links everything."""
     metadata = {
         "time_stamp": datetime.now().isoformat(),
         "run_desc": run_desc,
         "git_commit_hash": git_commit_hash,
-        "input_path": input_path,
-        "output_path": output_path,
-        "config_path": config_path,
-        "metrics_path": metrics_path,
-        "plots_path": plots_path
+        "input_path": str(input_path),
+        "output_path": str(output_path),
+        "config_path": str(config_path),
+        "metrics_path": str(metrics_path),
+        "plots_path": str(plots_path),
     }
-    metadata_path = Path(output_path) / "metadata.yaml"
-    Path(metadata_path).parent.mkdir(parents=True, exist_ok=True)
-    with open(metadata_path, 'w') as f:
-        yaml.dump(metadata, f, default_flow_style=False)
-    print(f"Metadata saved: {metadata}")
+    p = Path(output_path) / "metadata.yaml"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with open(p, "w") as f:
+        yaml.safe_dump(metadata, f, sort_keys=False)
+    print(f"Metadata saved to {p}")
     return metadata
