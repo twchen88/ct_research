@@ -167,13 +167,12 @@ def predict_all_domains(model: torch.nn.Module, x: np.ndarray, y: np.ndarray, lo
     matrix = np.column_stack(prediction_list)
     return matrix
 
-def max_prediction_from_difference_pair(difference_matrix, prediction_matrix, current_matrix, run_type):
+def max_prediction_from_difference_pair(prediction_matrix, current_matrix, run_type):
     """
     For each row, find the index of the largest improvement among the domains
     where current_matrix is 'missing' (i.e., [0, 0] or [1, 1]).
 
     Parameters:
-        difference_matrix (np.ndarray): of shape (N, D)
         prediction_matrix (np.ndarray): of shape (N, D)
         current_matrix (np.ndarray): of shape (N, D, 2), score pairs
 
@@ -187,23 +186,34 @@ def max_prediction_from_difference_pair(difference_matrix, prediction_matrix, cu
     val_mask = (current_matrix_pairs[:, :, 0] == 0) | (current_matrix_pairs[:, :, 0] == 1)
     missing_mask = eq_mask & val_mask  # Shape: (N, D)
 
-    # Step 2: Allocate outputs
-    max_indices = np.full(difference_matrix.shape[0], np.nan)
-    max_values = np.full(difference_matrix.shape[0], np.nan)
-
     if run_type == "repeat":
         valid_mask = ~missing_mask
     else:
         valid_mask = missing_mask
 
-    # Step 3: Iterate through each row
-    for i in range(difference_matrix.shape[0]):
-        valid_indices = np.where(valid_mask[i])[0]
-        if valid_indices.size > 0:
-            valid_differences = difference_matrix[i, valid_indices]
-            max_idx = np.argmax(valid_differences)
-            max_indices[i] = valid_indices[max_idx]
-            max_values[i] = prediction_matrix[i, valid_indices[max_idx]]
+    current_matrix_decoded = decode_missing_indicator(current_matrix)
+
+    max_indices = np.full(current_matrix_decoded.shape, 0)
+    max_values = np.full(current_matrix_decoded.shape, 0.0)
+
+    # compute per-cell difference
+    difference_full = np.where(np.isnan(current_matrix_decoded),
+                            prediction_matrix,
+                            prediction_matrix - current_matrix_decoded)
+
+    # mask out invalid columns per row
+    masked = np.where(valid_mask, difference_full, 0)
+
+    # argmax per row
+    row_argmax = np.argmax(masked, axis=1)
+    row_maxval = masked[np.arange(masked.shape[0]), row_argmax]
+
+    # build outputs
+    max_indices = np.zeros_like(current_matrix_decoded, dtype=int)
+    max_indices[np.arange(max_indices.shape[0]), row_argmax] = 1
+
+    max_values = np.full_like(current_matrix_decoded, -np.inf, dtype=float)
+    max_values[np.arange(max_values.shape[0]), row_argmax] = row_maxval
 
     return max_values, max_indices
 
@@ -223,11 +233,9 @@ def find_best_idx_pred(model: torch.nn.Module, x: np.ndarray, y: np.ndarray, mis
         Tuple[np.ndarray, np.ndarray]: (best_encoding, best_predictions)
     """
     prediction_matrix = predict_all_domains(model, x, y, missing_counts)
-    difference = prediction_matrix - x[:, ::2]
     # Find the index of the max difference for each row
-    max_values, max_indices = max_prediction_from_difference_pair(difference, prediction_matrix, x, run_type)
-    # Create a zero matrix of shape (100000, 14)
-    future_scores_best, best_encoding = reconstruct_max_matrices(max_values, max_indices, prediction_matrix.shape)
+    best_encoding, future_scores_best = max_prediction_from_difference_pair(prediction_matrix, x, run_type)
+    # future_scores_best, best_encoding = reconstruct_max_matrices(max_values, max_indices, prediction_matrix.shape)
     return best_encoding, future_scores_best
 
 
