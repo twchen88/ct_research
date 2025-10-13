@@ -235,35 +235,7 @@ def find_best_idx_pred(model: torch.nn.Module, x: np.ndarray, y: np.ndarray, mis
     prediction_matrix = predict_all_domains(model, x, y, missing_counts)
     # Find the index of the max difference for each row
     best_encoding, future_scores_best = max_prediction_from_difference_pair(prediction_matrix, x, run_type)
-    # future_scores_best, best_encoding = reconstruct_max_matrices(max_values, max_indices, prediction_matrix.shape)
     return best_encoding, future_scores_best
-
-
-def reconstruct_max_matrices(max_values: np.ndarray, max_indices: np.ndarray, shape: tuple) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Given the max values and their corresponding indices, reconstruct two matrices:
-    1. A matrix with the max values placed at their respective indices, and 0s elsewhere.
-    2. A binary matrix with 1s at the positions of the max indices, and 0s elsewhere.
-
-    Parameters:
-        max_values (np.ndarray): Array of max values for each row.
-        max_indices (np.ndarray): Array of indices corresponding to the max values for each row.
-        shape (tuple): Desired shape of the output matrices (n_rows, n_cols).
-    
-    Returns:
-        Tuple[np.ndarray, np.ndarray]: (max_values_matrix, max_indices_matrix)
-    """
-    max_values_matrix = np.zeros(shape)  # Matrix for max values
-    max_indices_matrix = np.zeros(shape, dtype=int)  # Matrix for 1s at max indices
-
-    # Iterate through rows
-    for i in range(shape[0]):
-        if not np.isnan(max_indices[i]):  # Ensure there's a valid index
-            col_idx = int(max_indices[i])
-            max_values_matrix[i, col_idx] = max_values[i]
-            max_indices_matrix[i, col_idx] = 1  # Mark the index with 1
-
-    return max_values_matrix, max_indices_matrix
 
 
 def filter_n_missing(data: np.ndarray, n_missing: int) -> np.ndarray:
