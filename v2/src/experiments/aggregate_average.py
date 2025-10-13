@@ -160,12 +160,8 @@ def predict_all_domains(model: torch.nn.Module, x: np.ndarray, y: np.ndarray, lo
     # loop through fourteen domains, get the predictions and store the predictions for that domain only in a list
     for domain in loop_range:
         single_encoding = create_single_encoding(rows, cols, domain)
-        print("single encoding: ", single_encoding.shape)
         x_single = add_encoding(x, single_encoding)
-        print("x: ", x.shape)
-        print("x single: ", x_single.shape)
         single_prediction = inference(model, torch.from_numpy(x_single).float())
-        print("single prediction: ", single_prediction.shape)
         prediction_list.append(single_prediction[:, domain])
     
     matrix = np.column_stack(prediction_list)
