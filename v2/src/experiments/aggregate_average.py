@@ -215,7 +215,7 @@ def max_prediction_from_difference_pair(prediction_matrix, current_matrix, run_t
     max_values = np.full_like(current_matrix_decoded, -np.inf, dtype=float)
     max_values[np.arange(max_values.shape[0]), row_argmax] = row_maxval
 
-    return max_values, max_indices
+    return max_indices, max_values
 
 
 def find_best_idx_pred(model: torch.nn.Module, x: np.ndarray, y: np.ndarray, missing_counts: List[int], run_type: str) -> Tuple[np.ndarray, np.ndarray]:
