@@ -350,7 +350,7 @@ def filter_sessions_by_missing_count(data: np.ndarray, n_missing: int) -> np.nda
     """
     Filters rows from `data` where the number of missing domain scores equals `n_missing`.
 
-    A domain is considered missing if its score pair is either [0, 0] or [1, 1].
+    A domain is considered missing if its score is np.nan
 
     Parameters:
         data (np.ndarray): Array with shape (n_rows, >=42), assuming 14 score pairs start at col 14.
@@ -359,13 +359,7 @@ def filter_sessions_by_missing_count(data: np.ndarray, n_missing: int) -> np.nda
     Returns:
         np.ndarray: Boolean mask array where True indicates rows with exactly `n_missing` missing domains.
     """
-    score_pairs = extract_score_pairs(data)  # Shape: (n_rows, 14, 2)
-    left, right = score_pairs[:, :, 0], score_pairs[:, :, 1]
-
-    missing_mask = find_missing_mask(left, right)  # Shape: (n_rows, 14)
-    missing_counts = np.sum(missing_mask, axis=1)  # Shape: (n_rows,)
-
-    return missing_counts == n_missing
+    return np.isnan(data).sum(axis=1) == n_missing
 
 
 def compute_errors(gt_score: np.ndarray, prediction_score: np.ndarray) -> Tuple[np.floating[Any] | Literal[0], np.floating[Any] | Literal[0]]:
@@ -543,13 +537,13 @@ def average_scores_by_missing_counts(missing_counts, current_scores, future_scor
     
     for n in missing_counts:
         print(f"Computing averages for missing count: {n}")
+        decoded_current_scores = decode_missing_indicator(current_scores)  # shape (N, 14)
 
-        row_mask = filter_sessions_by_missing_count(current_scores, n)
+        row_mask = filter_sessions_by_missing_count(decoded_current_scores, n)
         print(f"Number of sessions with {n} missing domains: {np.sum(row_mask)}")
 
         encoding_mask = (encoding == 1)  # shape (N, 14)
 
-        decoded_current_scores = decode_missing_indicator(current_scores)  # shape (N, 14)
         avg, std = compute_avg_std_selected(
             cur_scores=decoded_current_scores,      # (N,14)
             future_scores=future_scores,    # (N,14)
