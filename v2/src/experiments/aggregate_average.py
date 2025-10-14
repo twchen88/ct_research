@@ -77,12 +77,13 @@ def create_random_encoding(data: np.ndarray, run_type: str) -> np.ndarray:
                     where an invalid score pair exists.
     """
     n_rows = data.shape[0]
-    output = np.zeros((n_rows, 14), dtype=int)
+    n_cols = data.shape[1] // 2
+    output = np.zeros((n_rows, n_cols), dtype=int)
 
-    score_pairs = data.reshape(-1, 14, 2)  # Shape: (n_rows, 14, 2)
+    score_pairs = data.reshape(-1, n_cols, 2)  # Shape: (n_rows, n_cols, 2)
 
     # A score pair is invalid if both values are equal (i.e., [0,0] or [1,1])
-    missing_mask = find_missing_mask(score_pairs[:, :, 0], score_pairs[:, :, 1])  # Shape: (n_rows, 14)
+    missing_mask = find_missing_mask(score_pairs[:, :, 0], score_pairs[:, :, 1])  # Shape: (n_rows, n_cols)
 
     if run_type == "repeat":
         valid_mask = ~missing_mask # we want to select from non missing pairs
