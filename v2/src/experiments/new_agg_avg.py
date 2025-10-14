@@ -48,7 +48,7 @@ def predict_all_domains(model: torch.nn.Module, x: np.ndarray, loop_range: List[
         np.ndarray: Prediction matrix of shape (n_rows, 14) with predictions for each domain.
     """
     prediction_list = []
-    rows, cols = x.shape
+    rows, cols = x.shape[0], x.shape[1]//2
     # loop through fourteen domains, get the predictions and store the predictions for that domain only in a list
     for domain in loop_range:
         single_encoding = create_single_encoding(rows, cols, domain)
