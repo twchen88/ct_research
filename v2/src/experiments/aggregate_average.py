@@ -445,7 +445,7 @@ def evaluate_error_by_missing_count(test_x, test_y, test_predictions, dims=14):
     missing_counts = list(range(0, dims))
 
     for n in missing_counts:
-        filter_mask = filter_sessions_by_missing_count(cur_score, n)
+        filter_mask = filter_sessions_by_missing_count(decode_missing_indicator(cur_score), n)
         filtered_encoding = encoding[filter_mask]
 
         masks = [filter_mask, (filtered_encoding == 1)]
