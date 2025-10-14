@@ -52,7 +52,7 @@ def inference(model: torch.nn.Module, data: torch.Tensor) -> np.ndarray:
         torch.Tensor: Model predictions as a PyTorch tensor.
     """
     print("Data shape:", data.shape)
-    assert data.shape[1] == 42, "Input data must have shape (N, 42)"
+    assert data.shape[1] == 42, "Input data must have shape (N, 42). Got shape {}".format(data.shape)
     model.eval()  # Ensure the model is in evaluation mode
     with torch.no_grad():  # Disable gradient calculation for inference
         predictions = model(data)
