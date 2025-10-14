@@ -71,20 +71,6 @@ def aggregate_average_pipeline(test_x, test_y, model, figure_path, run_type):
     best_encoding, future_scores_best = core.find_best_idx_pred(model, cur_score_gt, future_score_gt, missing_counts, run_type)
     random_encoding, future_scores_random = core.find_random_predictions(model, cur_score_gt, run_type)
 
-    # sanity checks: are future scores negative? If not, then we know it's something in average_scores_by_missing_counts
-    for name, arr in {
-        "future_scores_best": future_scores_best,
-        "future_scores_random": future_scores_random,
-        "future_score_gt": future_score_gt,
-    }.items():
-        arr = np.asarray(arr)
-        neg_idx = np.where(arr < 0)[0]
-        assert neg_idx.size == 0, (
-            f"{name} has {neg_idx.size} negative values at indices {neg_idx.tolist()[:10]} "
-            f"(showing up to 10). min={arr.min():.6g}"
-        )
-    print("Sanity check passed: No negative future scores found.==================================")
-
     print("Calculating averages by missing counts...")
     print("Going through best strategy...")
     avg_lst_best, std_lst_best = core.average_scores_by_missing_counts(missing_counts, cur_score_gt, future_scores_best, best_encoding)
