@@ -60,21 +60,21 @@ def aggregate_average_pipeline(test_x, test_y, model, figure_path, run_type):
     # split encoding and scores
     gt_encoding, cur_score_gt = core.split_encoding_and_scores(test_x, dims=14)
 
-    cur_score_gt = core.decode_missing_indicator(cur_score_gt)
+    cur_score_gt_decoded = core.decode_missing_indicator(cur_score_gt)
     future_score_gt = test_y
     # define missing counts
     missing_counts = list(range(0, 14))
 
     # ground truth stats
-    avg_lst_gt, std_lst_gt = new_core.average_scores_by_missing_counts(missing_counts, cur_score_gt, future_score_gt, gt_encoding)
+    avg_lst_gt, std_lst_gt = new_core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, future_score_gt, gt_encoding)
 
     # model predictions
     ## random strategy
     rand_enc, rand_pred = new_core.choose_random(model, cur_score_gt, run_type)
-    avg_lst_rand, std_lst_rand = new_core.average_scores_by_missing_counts(missing_counts, cur_score_gt, rand_pred, rand_enc)
+    avg_lst_rand, std_lst_rand = new_core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, rand_pred, rand_enc)
     ## best strategy
     best_enc, best_pred = new_core.choose_best(model, cur_score_gt, missing_counts, run_type)
-    avg_lst_best, std_lst_best = new_core.average_scores_by_missing_counts(missing_counts, cur_score_gt, best_pred, best_enc)
+    avg_lst_best, std_lst_best = new_core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, best_pred, best_enc)
     
     avg_dict = {
         "best": avg_lst_best,

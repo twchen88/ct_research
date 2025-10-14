@@ -41,7 +41,7 @@ def predict_all_domains(model: torch.nn.Module, x: np.ndarray, loop_range: List[
 
     Parameters:
         model (torch.nn.Module): The trained model for inference.
-        x (np.ndarray): Input data array with shape (n_rows, 14), i.e. current scores.
+        x (np.ndarray): Input data array with shape (n_rows, 28), i.e. current scores.
         loop_range (range): Range of domain indices to loop through (e.g., range(14)).
 
     Returns:
@@ -123,7 +123,7 @@ def create_best(cur_score, pred_score, valid_mask):
     return best_enc, best_pred_scores
 
 def create_random(model, cur_score, valid_mask):
-    rows, cols = cur_score.shape
+    rows, cols = valid_mask.shape
     rand_enc = np.zeros((rows, cols), dtype=int)
     rand_pred_scores = np.full((rows, cols), np.nan)
     # randomly choose domains to encode
@@ -138,12 +138,12 @@ def create_random(model, cur_score, valid_mask):
     return rand_enc, rand_pred_scores
 
 def choose_random(model, cur_score, run_type):
-    valid_mask = find_valid_domains(cur_score, run_type=run_type)
+    valid_mask = find_valid_domains(decode_missing_indicator(cur_score), run_type=run_type)
     rand_enc, rand_pred_scores = create_random(model, cur_score, valid_mask)
     return rand_enc, rand_pred_scores
 
 def choose_best(model, cur_score, missing_counts, run_type):
     predictions_all_domains = predict_all_domains(model, cur_score, loop_range=missing_counts)
     valid_mask = find_valid_domains(cur_score, run_type=run_type)
-    best_enc, best_pred_scores = create_best(cur_score, predictions_all_domains, valid_mask)
+    best_enc, best_pred_scores = create_best(decode_missing_indicator(cur_score), predictions_all_domains, valid_mask)
     return best_enc, best_pred_scores
