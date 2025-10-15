@@ -57,6 +57,7 @@ def predict_all_domains(model: torch.nn.Module, x: np.ndarray, loop_range: List[
         prediction_list.append(single_prediction[:, domain])
     
     matrix = np.column_stack(prediction_list)
+    print("Prediction matrix shape:", matrix.shape)  # Debugging line to check the shape
     return matrix
 
 def mask_by_missing_count(scores: np.ndarray, missing_count: int) -> np.ndarray:
@@ -107,16 +108,25 @@ def find_valid_domains(scores: np.ndarray, run_type: str) -> np.ndarray:
     return valid_mask
 
 def create_best(cur_score, pred_score, valid_mask):
-    rows, cols = cur_score.shape
+    rows, cols = valid_mask.shape
     best_enc = np.zeros((rows, cols), dtype=int)
     best_pred_scores = np.full((rows, cols), np.nan)
 
     # mask invalid domains with -inf so it won't be chosen
     masked_pred_score = np.where(valid_mask, pred_score, -np.inf)
+    # decode cur_score to original scores and impute missing with NaN
+    cur_score_decoded = decode_missing_indicator(cur_score)
+
+    # compute difference between predicted and current, treating NaN as 0 baseline
+    # if current is NaN, should be nonrepeat, so diff = pred - 0 = pred
+    diff = np.where(np.isnan(cur_score_decoded),
+                        masked_pred_score,
+                        masked_pred_score - cur_score_decoded)
+    
     # choose best domain to encode
     for i in range(rows):
         if valid_mask[i].any():
-            chosen = np.nanargmax(masked_pred_score[i])
+            chosen = np.nanargmax(diff[i])
             best_enc[i, chosen] = 1
             best_pred_scores[i, chosen] = masked_pred_score[i, chosen]
 
@@ -137,13 +147,8 @@ def create_random(model, cur_score, valid_mask):
 
     return rand_enc, rand_pred_scores
 
-def choose_random(model, cur_score, run_type):
-    valid_mask = find_valid_domains(decode_missing_indicator(cur_score), run_type=run_type)
-    rand_enc, rand_pred_scores = create_random(model, cur_score, valid_mask)
-    return rand_enc, rand_pred_scores
 
-def choose_best(model, cur_score, missing_counts, run_type):
+def choose_best_and_random(model, cur_score, missing_counts, valid_mask):
     predictions_all_domains = predict_all_domains(model, cur_score, loop_range=missing_counts)
-    valid_mask = find_valid_domains(cur_score, run_type=run_type)
     best_enc, best_pred_scores = create_best(decode_missing_indicator(cur_score), predictions_all_domains, valid_mask)
-    return best_enc, best_pred_scores
+    return (best_enc, best_pred_scores), (create_random(model, cur_score, valid_mask))

@@ -69,13 +69,13 @@ def aggregate_average_pipeline(test_x, test_y, model, figure_path, run_type):
     avg_lst_gt, std_lst_gt = new_core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, future_score_gt, gt_encoding)
 
     # model predictions
+    valid_mask = new_core.find_valid_domains(cur_score_gt_decoded, run_type=run_type)
     ## random strategy
-    rand_enc, rand_pred = new_core.choose_random(model, cur_score_gt, run_type)
-    avg_lst_rand, std_lst_rand = new_core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, rand_pred, rand_enc)
     ## best strategy
-    best_enc, best_pred = new_core.choose_best(model, cur_score_gt, missing_counts, run_type)
+    (best_enc, best_pred), (rand_enc, rand_pred) = new_core.choose_best_and_random(model, cur_score_gt, missing_counts, valid_mask)
     avg_lst_best, std_lst_best = new_core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, best_pred, best_enc)
-    
+    avg_lst_rand, std_lst_rand = new_core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, rand_pred, rand_enc)
+
     avg_dict = {
         "best": avg_lst_best,
         "random": avg_lst_rand,
