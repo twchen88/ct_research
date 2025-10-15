@@ -68,6 +68,7 @@ def average_scores_by_missing_counts(missing_counts: List[int], cur_scores: np.n
     std_lst = []
 
     for mc in missing_counts:
+        # print("============== missing count:", mc)  # Debugging line to track progress
         mc_mask = mask_by_missing_count(cur_scores, mc)
 
         # filter by missing count
@@ -76,7 +77,7 @@ def average_scores_by_missing_counts(missing_counts: List[int], cur_scores: np.n
         filtered_enc = encoding[mc_mask]
 
         # only consider domains where encoding is 1
-        enc_mask = filtered_enc.astype(bool)
+        enc_mask = (filtered_enc == 1)
         # if no rows with mc missing, append NaNs
         if np.sum(mc_mask) == 0 or np.sum(enc_mask) == 0:
             avg_lst.append(np.nan)
@@ -85,7 +86,12 @@ def average_scores_by_missing_counts(missing_counts: List[int], cur_scores: np.n
 
         # compute difference between future and current, treating NaN as 0 baseline
         difference = np.where(np.isnan(filtered_cur), filtered_fut, filtered_fut - filtered_cur)
+        # print("current: ", filtered_cur[0])  # Debugging line to check for negatives
+        # print("future: ", filtered_fut[0])  # Debugging line to check
+        # print("encoding: ", enc_mask[0])  # Debugging line to check for negatives
+        # print("future score is negative", (filtered_fut < 0).any())  # Debugging line to check for negatives
         selected = difference[enc_mask]
+        # print("selected is negative", np.where((selected < 0)))  # Debugging line to check for negatives
 
         # compute average and std
         avg = np.mean(selected)
