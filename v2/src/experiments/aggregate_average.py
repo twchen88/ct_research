@@ -195,15 +195,15 @@ def max_prediction_from_difference_pair(prediction_matrix, current_matrix, run_t
     current_matrix_decoded = decode_missing_indicator(current_matrix)
 
     max_indices = np.full(current_matrix_decoded.shape, 0)
-    max_values = np.full(current_matrix_decoded.shape, 0.0)
+    max_values = np.full(current_matrix_decoded.shape, -np.inf)
 
     # compute per-cell difference
-    difference_full = np.where(np.isnan(current_matrix_decoded),
-                            prediction_matrix,
-                            prediction_matrix - current_matrix_decoded)
+    # difference_full = np.where(np.isnan(current_matrix_decoded),
+    #                         prediction_matrix,
+    #                         prediction_matrix - current_matrix_decoded)
 
     # mask out invalid columns per row
-    masked = np.where(valid_mask, difference_full, 0)
+    masked = np.where(valid_mask, prediction_matrix, -np.inf)
 
     # argmax per row
     row_argmax = np.argmax(masked, axis=1)
@@ -471,8 +471,7 @@ def compute_avg_std_selected(
     cur_scores: np.ndarray,        # shape (N, 14)
     future_scores: np.ndarray,     # shape (N, 14)
     row_mask: np.ndarray,          # shape (N,) -> from filter_sessions_by_missing_count
-    encoding_mask: np.ndarray,     # shape (N, 14) -> True where chosen domain(s), i.e., encoding==1
-    nonrepeat_baseline_zero: bool = True
+    encoding_mask: np.ndarray       # shape (N, 14) -> True where chosen domain(s), i.e., encoding==1
 ) -> Tuple[np.floating[Any] | Literal[0], np.floating[Any] | Literal[0]]:
     """
     1) Filter rows (sessions) by row_mask.
@@ -513,8 +512,8 @@ def compute_avg_std_selected(
         print(f"Example indices (row, col): {list(zip(rows[:10], cols[:10]))}")
     # --- compute improvement
     # If nonrepeat: baseline is 0 for missing (or for all; both yield fut_f when cur is NaN)
-    # improvement = np.where(np.isnan(cur_f), fut_f, fut_f - cur_f)
-    improvement = fut_f ## just future scores, hardcoding baseline=0 for nonrepeat
+    improvement = np.where(np.isnan(cur_f), fut_f, fut_f - cur_f)
+    # improvement = fut_f ## just future scores, hardcoding baseline=0 for nonrepeat
 
     # --- pick only encoded elements
     selected_vals = improvement[enc_f]  # 1D: all True positions flattened
@@ -548,8 +547,7 @@ def average_scores_by_missing_counts(missing_counts, current_scores, future_scor
             cur_scores=decoded_current_scores,      # (N,14)
             future_scores=future_scores,    # (N,14)
             row_mask=row_mask,                      # (N,)
-            encoding_mask=encoding_mask,          # (N,14)
-            nonrepeat_baseline_zero=True            # set True for nonrepeat runs
+            encoding_mask=encoding_mask          # (N,14)
         )
 
         avg_lst.append(avg)
