@@ -150,5 +150,5 @@ def create_random(model, cur_score, valid_mask):
 
 def choose_best_and_random(model, cur_score, missing_counts, valid_mask):
     predictions_all_domains = predict_all_domains(model, cur_score, loop_range=missing_counts)
-    best_enc, best_pred_scores = create_best(decode_missing_indicator(cur_score), predictions_all_domains, valid_mask)
+    best_enc, best_pred_scores = create_best(cur_score, predictions_all_domains, valid_mask)
     return (best_enc, best_pred_scores), (create_random(model, cur_score, valid_mask))
