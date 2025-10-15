@@ -1,0 +1,10 @@
+### Purpose: Run aggavg for model that has a sigmoid in its final layer
+### Not using percentile scores
+### Same as 1014
+settings:
+  device: "cpu"
+  seed: 42
+data:
+  data_source: "outputs/training_runs/run_20250922_sigmoid_final_layer_v1/results.npz"
+  model_source: "outputs/training_runs/run_20250922_sigmoid_final_layer_v1/model.pt"
+  destination_base: "outputs/aggavg/"
