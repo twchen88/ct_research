@@ -5,7 +5,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-import src.experiments.shared as shared  # module under test
+import ct.experiments.shared as shared  # module under test
 
 
 class TestDeterministicBackend:

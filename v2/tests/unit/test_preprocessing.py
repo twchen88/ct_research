@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from sklearn.cluster import DBSCAN
 
-import src.data.preprocessing as preprocessing
+import ct.data.preprocessing as preprocessing
 
 def test_drop_duplicates():
     # Create a sample DataFrame
@@ -15,7 +15,7 @@ def test_drop_duplicates():
     df = pd.DataFrame(data)
     # Brent is a duplicate of Bob, but with a different name so we can test that the drop is based on column 'id'
 
-    # Drop duplicates based on the 'id' column
+    # Drop duplicates based on the 'id' colum
     result_df = preprocessing.drop_duplicates(df, based_on=['id'])
 
     # Check if duplicates are dropped correctly

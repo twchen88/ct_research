@@ -4,8 +4,8 @@ import pytest
 import torch
 import torch.nn as nn
 
-import src.experiments.aggregate_average as aa
-import src.experiments.shared as shared
+import ct.experiments.aggregate_average as aa
+import ct.experiments.shared as shared
 
 
 # --------------------- Shared (unit) ---------------------
