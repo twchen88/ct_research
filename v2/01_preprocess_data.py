@@ -3,9 +3,9 @@ import gc
 import yaml
 import pandas as pd
 
-import src.data.data_io as data_io
-import src.data.preprocessing as preprocessing
-import src.utils.config_loading as config_loading
+import ct.data.data_io as data_io
+import ct.data.preprocessing as preprocessing
+import ct.utils.config_loading as config_loading
 
 from datetime import datetime
 from typing import Dict, Any

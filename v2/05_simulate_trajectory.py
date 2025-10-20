@@ -4,13 +4,13 @@ import numpy as np
 from datetime import datetime
 from pathlib import Path
 
-import src.utils.config_loading as config_loading
-import  src.experiments.trajectory as core
-import src.viz.trajectory as viz
+import ct.utils.config_loading as config_loading
+import  ct.experiments.trajectory as core
+import ct.viz.trajectory as viz
 
-from src.experiments.shared import load_model
-from src.utils.reproducibility import set_global_seed
-from src.utils.metadata import get_git_commit_hash
+from ct.experiments.shared import load_model
+from ct.utils.reproducibility import set_global_seed
+from ct.utils.metadata import get_git_commit_hash
 
 def create_run_dir(base_dir: str, tag: str):
     timestamp = datetime.now().strftime("%Y%m%d")

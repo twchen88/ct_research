@@ -3,12 +3,12 @@ import yaml
 import pandas as pd
 import numpy as np
 
-import src.utils.config_loading as config_loading
-import src.data.data_io as data_io
-import src.data.encoding as encoding
+import ct.utils.config_loading as config_loading
+import ct.data.data_io as data_io
+import ct.data.encoding as encoding
 
 from datetime import datetime
-from src.utils.metadata import get_git_commit_hash
+from ct.utils.metadata import get_git_commit_hash
 
 
 def save_metadata(input_path: str, output_path: str, config_path: str, column_names: list) -> None:

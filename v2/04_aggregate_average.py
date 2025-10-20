@@ -2,17 +2,17 @@ import argparse
 import yaml
 import numpy as np
 
-import src.experiments.file_io as file_io
-import src.experiments.aggregate_average as core
-import src.experiments.shared as shared
-import src.viz.aggregate_average as viz
+import ct.experiments.file_io as file_io
+import ct.experiments.aggregate_average as core
+import ct.experiments.shared as shared
+import ct.viz.aggregate_average as viz
 
 from pathlib import Path
 from datetime import datetime
 
-from src.utils.reproducibility import set_global_seed
-from src.utils.metadata import get_git_commit_hash
-from src.utils.config_loading import load_yaml_config
+from ct.utils.reproducibility import set_global_seed
+from ct.utils.metadata import get_git_commit_hash
+from ct.utils.config_loading import load_yaml_config
 
 def create_run_dir(base_dir: str, tag: str, run_type: str):
     timestamp = datetime.now().strftime("%Y%m%d")

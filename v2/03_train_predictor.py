@@ -2,18 +2,18 @@ import argparse
 import torch
 import matplotlib.pyplot as plt
 
-import src.training.file_io as file_io
-import src.training.training_torch as training
-import src.training.evaluation_torch as evaluation
-import src.utils.config_loading as config_loading
-import src.viz.training as visualize
+import ct.training.file_io as file_io
+import ct.training.training_torch as training
+import ct.training.evaluation_torch as evaluation
+import ct.utils.config_loading as config_loading
+import ct.viz.training as visualize
 
 from datetime import datetime
 from pathlib import Path
 
-from src.training.model_torch import Predictor
-from src.utils.reproducibility import set_global_seed
-from src.utils.metadata import get_git_commit_hash
+from ct.training.model_torch import Predictor
+from ct.utils.reproducibility import set_global_seed
+from ct.utils.metadata import get_git_commit_hash
 
 
 def create_run_dir(base_dir: str, tag: str):

@@ -3,10 +3,10 @@ import argparse
 import yaml
 from datetime import datetime
 ## import custom modules
-import src.data.db_utils as db_utils
-import src.data.data_io as data_io
-import src.utils.config_loading as config_loading
-from src.utils.metadata import get_git_commit_hash
+import ct.data.db_utils as db_utils
+import ct.data.data_io as data_io
+import ct.utils.config_loading as config_loading
+from ct.utils.metadata import get_git_commit_hash
 
 def save_metadata(output_path: str, config_path: str, config: dict) -> None:
     """
