@@ -3,7 +3,7 @@ import torch
 
 from typing import Tuple, List, Any, Literal
 
-from src.experiments.shared import *
+from ct.experiments.shared import *
 
 """
 src/experiments/aggregate_average.py
