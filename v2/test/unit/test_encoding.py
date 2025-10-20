@@ -1,5 +1,5 @@
 import numpy as np
-import src.data.encoding as encoding
+import data.encoding as encoding
 
 
 def test_create_missing_indicator():

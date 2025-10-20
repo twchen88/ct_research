@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from sklearn.cluster import DBSCAN
 
-import src.data.preprocessing as preprocessing
+import data.preprocessing as preprocessing
 
 def test_drop_duplicates():
     # Create a sample DataFrame
