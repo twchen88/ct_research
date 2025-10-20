@@ -42,7 +42,7 @@ class _MaskedMSEFunction(torch.autograd.Function):
         return grad_input, None, None, None  # pyright: ignore[reportReturnType]
 
 
-def masked_mse_loss(pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+def masked_mse_loss(pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor):
     return _MaskedMSEFunction.apply(pred, target, mask)
 
 
@@ -70,7 +70,7 @@ def get_loss_function(loss_function_name: str) -> Callable:
         setattr(fn, "requires_mask", False)
         return fn
     if name in ("masked_mse", "masked-mse", "masked"):
-        def _call(pred: torch.Tensor, target: torch.Tensor, *, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+        def _call(pred: torch.Tensor, target: torch.Tensor, *, mask: Optional[torch.Tensor] = None):
             if mask is None:
                 raise ValueError("masked_mse requires a mask tensor of shape (B, 14).");
             return masked_mse_loss(pred, target, mask)
