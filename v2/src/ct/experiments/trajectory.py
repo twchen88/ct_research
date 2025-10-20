@@ -3,8 +3,8 @@ import numpy as np
 
 from typing import Tuple, List
 
-from src.experiments.shared import create_single_encoding, inference, add_encoding
-from src.data.encoding import create_missing_indicator
+from ct.experiments.shared import create_single_encoding, inference, add_encoding
+from ct.data.encoding import create_missing_indicator
 
 """
 src/experiments/trajectory.py
@@ -126,7 +126,7 @@ def find_next_domain(initial_scores: np.ndarray, model: torch.nn.Module, mode: s
         # add encoding to the data
         x = add_encoding(x, encoding)
         # predict the score if its domain i and append to prediction list
-        single_prediction = inference(model, x)
+        single_prediction = inference(model, torch.from_numpy(x).float())
         prediction_list.append(single_prediction[:, i])
     prediction_matrix = np.column_stack(prediction_list)
     difference = prediction_matrix - np.nan_to_num(initial_scores)
