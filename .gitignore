@@ -4,6 +4,9 @@
 **/.pytest_cache/
 **/*.pt
 **/*.npz
+*.egg-info
+build/
+dist/
 
 # v1
 v1/misc/
