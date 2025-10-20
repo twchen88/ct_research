@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import random
 
 from typing import Tuple, List, Any, Literal
 
@@ -48,8 +47,9 @@ def assign_repeat(data: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: Boolean array of shape (n_samples,) where True means session is a repeat.
     """
-    encodings = data[:, :14]  # (N, 14)
-    score_pairs = data[:, 14:42].reshape(-1, 14, 2)  # (N, 14, 2)
+    n_domains = 14
+    encodings, score = split_encoding_and_scores(data, dims=n_domains)
+    score_pairs = score.reshape(-1, n_domains, 2)
 
     # Determine if a score pair is invalid: [0, 0] or [1, 1]
     invalid_mask = find_missing_mask(score_pairs[:, :, 0], score_pairs[:, :, 1])  # (N, 14)
@@ -60,45 +60,6 @@ def assign_repeat(data: np.ndarray) -> np.ndarray:
     is_repeat = ~np.any(violating_domains, axis=1)
 
     return is_repeat
-
-
-
-def create_random_encoding(data: np.ndarray, run_type: str) -> np.ndarray:
-    """
-    Creates a random domain encoding for each row by selecting one domain
-    at random where the score pair is invalid ([0,0] or [1,1]).
-    
-    Parameters:
-        data (np.ndarray): Array with shape (n_rows, 28). Contains current scores and complements only.
-        run_type (str): Either "repeat" or "nonrepeat". If "repeat", select from non-missing pairs; if "nonrepeat", select from missing pairs.
-
-    Returns:
-        np.ndarray: Binary array of shape (n_rows, 14) with a single 1 randomly placed per row
-                    where an invalid score pair exists.
-    """
-    n_rows = data.shape[0]
-    n_cols = data.shape[1] // 2
-    output = np.zeros((n_rows, n_cols), dtype=int)
-
-    score_pairs = data.reshape(-1, n_cols, 2)  # Shape: (n_rows, n_cols, 2)
-
-    # A score pair is invalid if both values are equal (i.e., [0,0] or [1,1])
-    missing_mask = find_missing_mask(score_pairs[:, :, 0], score_pairs[:, :, 1])  # Shape: (n_rows, n_cols)
-
-    if run_type == "repeat":
-        valid_mask = ~missing_mask # we want to select from non missing pairs
-    elif run_type == "nonrepeat":
-        valid_mask = missing_mask # we want to select from missing pairs
-    else:
-        raise ValueError("run_type must be either 'repeat' or 'nonrepeat'")
-
-    for i in range(n_rows):
-        valid_indices = np.where(valid_mask[i])[0]  # Domains with invalid score pairs
-        if valid_indices.size > 0:
-            chosen = np.random.choice(valid_indices)
-            output[i, chosen] = 1
-
-    return output
 
 
 def split_encoding_and_scores(data: np.ndarray, dims=14) -> Tuple[np.ndarray, np.ndarray]:
@@ -118,46 +79,21 @@ def split_encoding_and_scores(data: np.ndarray, dims=14) -> Tuple[np.ndarray, np
     scores = data[:, dims:]
     return encoding, scores
 
-
-def find_random_predictions(model: torch.nn.Module, data: np.ndarray, run_type: str) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Take in a dataframe, find random predictions for the given data using the specified run type.
-    If run_type is "repeat", select from non-missing pairs; if "nonrepeat", select from missing pairs.
-    Returns the random encoding and the corresponding predictions.
-
-    Parameters:
-        model: Trained model for inference.
-        data (np.ndarray): Input data array with shape (n_rows, ==28, scores only).
-        run_type (str): Either "repeat" or "nonrepeat".
-
-    Returns:
-        Tuple[np.ndarray, np.ndarray]: (random_encoding, predictions)
-
-    """
-    random_encoding = create_random_encoding(data, run_type=run_type)
-    x_random = add_encoding(data, random_encoding)
-    assert x_random.shape[1] == 42, "Input to model must have shape (N, 42)"
-    predictions = inference(model, torch.from_numpy(x_random).float())
-    return random_encoding, predictions
-
-
-
-def predict_all_domains(model: torch.nn.Module, x: np.ndarray, y: np.ndarray, loop_range: List[int]) -> np.ndarray:
+def predict_all_domains(model: torch.nn.Module, x: np.ndarray, loop_range: List[int]) -> np.ndarray:
     """
     Given scores with missing indicators (x) and target (y), return a list of predictions according to which index is 1
     in encoding.
 
     Parameters:
         model (torch.nn.Module): The trained model for inference.
-        x (np.ndarray): Input data array with shape (n_rows, 28).
-        y (np.ndarray): Target data array with shape (n_rows, 14).
+        x (np.ndarray): Input data array with shape (n_rows, 28), i.e. current scores.
         loop_range (range): Range of domain indices to loop through (e.g., range(14)).
 
     Returns:
         np.ndarray: Prediction matrix of shape (n_rows, 14) with predictions for each domain.
     """
     prediction_list = []
-    rows, cols = y.shape
+    rows, cols = x.shape[0], x.shape[1]//2
     # loop through fourteen domains, get the predictions and store the predictions for that domain only in a list
     for domain in loop_range:
         single_encoding = create_single_encoding(rows, cols, domain)
@@ -168,76 +104,99 @@ def predict_all_domains(model: torch.nn.Module, x: np.ndarray, y: np.ndarray, lo
     matrix = np.column_stack(prediction_list)
     return matrix
 
-def max_prediction_from_difference_pair(prediction_matrix, current_matrix, run_type):
-    """
-    For each row, find the index of the largest improvement among the domains
-    where current_matrix is 'missing' (i.e., [0, 0] or [1, 1]).
 
-    Parameters:
-        prediction_matrix (np.ndarray): of shape (N, D)
-        current_matrix (np.ndarray): of shape (N, D, 2), score pairs
+def mask_by_missing_count(scores: np.ndarray, missing_count: int) -> np.ndarray:
+    return np.sum(np.isnan(scores), axis=1) == missing_count
 
-    Returns:
-        Tuple[np.ndarray, np.ndarray]: (max_values, max_indices)
-    """
-    # Step 1: Create a boolean mask of missing values: [0,0] or [1,1]
-    current_matrix_pairs = current_matrix.reshape(-1, 14, 2)
+def average_scores_by_missing_counts(missing_counts: List[int], cur_scores: np.ndarray, future_scores: np.ndarray, encoding: np.ndarray) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+    avg_lst = []
+    std_lst = []
 
-    eq_mask = current_matrix_pairs[:, :, 0] == current_matrix_pairs[:, :, 1]
-    val_mask = (current_matrix_pairs[:, :, 0] == 0) | (current_matrix_pairs[:, :, 0] == 1)
-    missing_mask = eq_mask & val_mask  # Shape: (N, D)
+    for mc in missing_counts:
+        mc_mask = mask_by_missing_count(cur_scores, mc)
 
+        # filter by missing count
+        filtered_cur = cur_scores[mc_mask]
+        filtered_fut = future_scores[mc_mask]
+        filtered_enc = encoding[mc_mask]
+
+        # only consider domains where encoding is 1
+        enc_mask = (filtered_enc == 1)
+        # if no rows with mc missing, append NaNs
+        if np.sum(mc_mask) == 0 or np.sum(enc_mask) == 0:
+            avg_lst.append(np.nan)
+            std_lst.append(np.nan)
+            continue
+
+        # compute difference between future and current, treating NaN as 0 baseline
+        difference = np.where(np.isnan(filtered_cur), filtered_fut, filtered_fut - filtered_cur)
+        selected = difference[enc_mask]
+
+        # compute average and std
+        avg = np.mean(selected)
+        std = np.std(selected, ddof=1)  # sample std
+
+        # append to lists
+        avg_lst.append(avg)
+        std_lst.append(std)
+
+    return avg_lst, std_lst
+
+def find_valid_domains(scores: np.ndarray, run_type: str) -> np.ndarray:
+    is_missing = np.isnan(scores)
     if run_type == "repeat":
-        valid_mask = ~missing_mask
+        valid_mask = ~is_missing
+    elif run_type == "nonrepeat":
+        valid_mask = is_missing
     else:
-        valid_mask = missing_mask
+        raise ValueError(f"Invalid run_type: {run_type}. Must be 'repeat' or 'nonrepeat'.")
+    return valid_mask
 
-    current_matrix_decoded = decode_missing_indicator(current_matrix)
+def create_best(cur_score, pred_score, valid_mask):
+    rows, cols = valid_mask.shape
+    best_enc = np.zeros((rows, cols), dtype=int)
+    best_pred_scores = np.full((rows, cols), np.nan)
 
-    max_indices = np.full(current_matrix_decoded.shape, 0)
-    max_values = np.full(current_matrix_decoded.shape, -np.inf)
+    # mask invalid domains with -inf so it won't be chosen
+    masked_pred_score = np.where(valid_mask, pred_score, -np.inf)
+    # decode cur_score to original scores and impute missing with NaN
+    cur_score_decoded = decode_missing_indicator(cur_score)
 
-    # compute per-cell difference
-    # difference_full = np.where(np.isnan(current_matrix_decoded),
-    #                         prediction_matrix,
-    #                         prediction_matrix - current_matrix_decoded)
+    # compute difference between predicted and current, treating NaN as 0 baseline
+    # if current is NaN, should be nonrepeat, so diff = pred - 0 = pred
+    diff = np.where(np.isnan(cur_score_decoded),
+                        masked_pred_score,
+                        masked_pred_score - cur_score_decoded)
+    
+    # choose best domain to encode
+    for i in range(rows):
+        if valid_mask[i].any():
+            chosen = np.nanargmax(diff[i])
+            best_enc[i, chosen] = 1
+            best_pred_scores[i, chosen] = masked_pred_score[i, chosen]
 
-    # mask out invalid columns per row
-    masked = np.where(valid_mask, prediction_matrix, -np.inf)
+    return best_enc, best_pred_scores
 
-    # argmax per row
-    row_argmax = np.argmax(masked, axis=1)
-    row_maxval = masked[np.arange(masked.shape[0]), row_argmax]
+def create_random(model, cur_score, valid_mask):
+    rows, cols = valid_mask.shape
+    rand_enc = np.zeros((rows, cols), dtype=int)
+    rand_pred_scores = np.full((rows, cols), np.nan)
+    # randomly choose domains to encode
+    for i in range(rows):
+        valid_indices = np.where(valid_mask[i])[0]
+        if valid_indices.size > 0:
+            chosen = np.random.choice(valid_indices)
+            rand_enc[i, chosen] = 1
 
-    # build outputs
-    max_indices = np.zeros_like(current_matrix_decoded, dtype=int)
-    max_indices[np.arange(max_indices.shape[0]), row_argmax] = 1
+    rand_pred_scores = inference(model, torch.from_numpy(add_encoding(cur_score, rand_enc)).float())
 
-    max_values = np.full_like(current_matrix_decoded, -np.inf, dtype=float)
-    max_values[np.arange(max_values.shape[0]), row_argmax] = row_maxval
-
-    return max_indices, max_values
+    return rand_enc, rand_pred_scores
 
 
-def find_best_idx_pred(model: torch.nn.Module, x: np.ndarray, y: np.ndarray, missing_counts: List[int], run_type: str) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Given x and y and original dataframe, find the encoding that results in the best scores, return encoding and predictions
-
-    Parameters:
-        model (torch.nn.Module): The trained model for inference.
-        x (np.ndarray): Current Score data array with shape (n_rows, 28).
-        y (np.ndarray): Target data array with shape (n_rows, 14).
-        missing_counts (List[int]): List of missing counts to consider.
-        run_type (str): Either "repeat" or "nonrepeat".
-
-    Returns:
-        Tuple[np.ndarray, np.ndarray]: (best_encoding, best_predictions)
-    """
-    prediction_matrix = predict_all_domains(model, x, y, missing_counts)
-    # Find the index of the max difference for each row
-    best_encoding, future_scores_best = max_prediction_from_difference_pair(prediction_matrix, x, run_type)
-    return best_encoding, future_scores_best
-
+def choose_best_and_random(model, cur_score, missing_counts, valid_mask):
+    predictions_all_domains = predict_all_domains(model, cur_score, loop_range=missing_counts)
+    best_enc, best_pred_scores = create_best(cur_score, predictions_all_domains, valid_mask)
+    return (best_enc, best_pred_scores), (create_random(model, cur_score, valid_mask))
 
 def filter_n_missing(data: np.ndarray, n_missing: int) -> np.ndarray:
     """
@@ -316,14 +275,9 @@ def overall_avg_improvement_with_std(data: np.ndarray, pred_score: np.ndarray) -
     if len(improvement) == 0:
         avg_improvement = 0
         std_dev = 0
-        print("No sessions with nonzero improvement")
     else:
         avg_improvement = np.mean(improvement)
         std_dev = np.std(improvement, ddof=1)  # Using sample standard deviation (ddof=1)
-
-        print("Number of predicted domains:", len(improvement))
-        print("Average improvement:", avg_improvement)
-        print("Standard deviation:", std_dev)
 
     return avg_improvement, std_dev
 
@@ -397,42 +351,6 @@ def filter_with_masks(data: np.ndarray, masks: List[np.ndarray]) -> np.ndarray:
         data = data[mask]
     return data
 
-
-def safe_mean_std(x: np.ndarray) -> Tuple[np.floating[Any] | Literal[0], np.floating[Any] | Literal[0]]:
-    x = np.asarray(x, dtype=float)
-    if x.size == 0:
-        return np.float64(np.nan), np.float64(np.nan)
-    if x.size == 1:
-        return np.float64(x[0]), np.float64(np.nan)
-    return np.float64(np.mean(x)), np.float64(np.std(x, ddof=1))
-
-
-def compute_averages_and_stds(cur_scores: np.ndarray, future_scores: np.ndarray, masks: List[np.ndarray]) -> Tuple[np.floating[Any] | Literal[0], np.floating[Any] | Literal[0]]:
-    """
-    Computes the average and standard deviation of the improvements between current and future scores,
-    applying the provided masks to filter the data.
-
-    List of masks - first mask for missing count, second mask for location of target value (encoding == 1)
-
-    Parameters:
-        cur_scores (np.ndarray): Current scores.
-        future_scores (np.ndarray): Future scores.
-        masks (list of np.ndarray): List of boolean masks to filter the data.
-    
-    Returns:
-        Tuple[float, float]: (average improvement, standard deviation of improvement)
-    """
-    difference = np.where(np.isnan(cur_scores), future_scores, future_scores - cur_scores)
-    difference_filtered = filter_with_masks(difference, masks)
-
-    if np.any(difference_filtered < 0):
-        print("Warning: difference_filtered contains negative values.")
-
-    average, std_dev = safe_mean_std(difference_filtered)
-
-    return average, std_dev
-
-
 def evaluate_error_by_missing_count(test_x, test_y, test_predictions, dims=14):
     encoding, cur_score = split_encoding_and_scores(test_x, dims=dims)
     future_score_gt = test_y
@@ -465,92 +383,3 @@ def evaluate_error_by_missing_count(test_x, test_y, test_predictions, dims=14):
         ground_truth_std_list.append(std_dev)
 
     return missing_counts, mean_errors_list, ground_truth_std_list, ground_truth_dict
-
-
-def compute_avg_std_selected(
-    cur_scores: np.ndarray,        # shape (N, 14)
-    future_scores: np.ndarray,     # shape (N, 14)
-    row_mask: np.ndarray,          # shape (N,) -> from filter_sessions_by_missing_count
-    encoding_mask: np.ndarray       # shape (N, 14) -> True where chosen domain(s), i.e., encoding==1
-) -> Tuple[np.floating[Any] | Literal[0], np.floating[Any] | Literal[0]]:
-    """
-    1) Filter rows (sessions) by row_mask.
-    2) Compute improvements element-wise:
-         - if nonrepeat_baseline_zero: improvement = future (baseline 0 when current is NaN)
-         - else: improvement = future - current, but if current is NaN treat as 0 => improvement = future
-    3) Select ONLY elements indicated by encoding_mask in the filtered rows.
-    4) Return mean/std over those selected elements.
-    """
-    # --- shape checks
-    cur_scores = np.asarray(cur_scores, dtype=float)
-    future_scores = np.asarray(future_scores, dtype=float)
-    row_mask = np.asarray(row_mask, dtype=bool)
-    encoding_mask = np.asarray(encoding_mask, dtype=bool)
-
-    N, C1 = cur_scores.shape
-    N2, C2 = future_scores.shape
-    if cur_scores.ndim != 2 or future_scores.ndim != 2 or C1 != C2:
-        raise ValueError(f"cur_scores {cur_scores.shape} and future_scores {future_scores.shape} must be 2D with same second dim")
-    if row_mask.shape != (N,):
-        raise ValueError(f"row_mask must be shape {(N,)}, got {row_mask.shape}")
-    if encoding_mask.shape != (N, C1):
-        raise ValueError(f"encoding_mask must be shape {(N, C1)}, got {encoding_mask.shape}")
-
-    # --- filter rows
-    cur_f = cur_scores[row_mask]        # (K, 14)
-    fut_f = future_scores[row_mask]     # (K, 14)
-    enc_f = encoding_mask[row_mask]     # (K, 14)
-
-
-    violations = (enc_f == 1) & ~np.isnan(cur_f)
-
-    if np.any(violations):
-        rows, cols = np.where(violations)
-        print(
-            f"Warning: Found {len(rows)} violations where encoding==1 but current score is not NaN."
-        )
-        print(f"Example indices (row, col): {list(zip(rows[:10], cols[:10]))}")
-    # --- compute improvement
-    # If nonrepeat: baseline is 0 for missing (or for all; both yield fut_f when cur is NaN)
-    improvement = np.where(np.isnan(cur_f), fut_f, fut_f - cur_f)
-    # improvement = fut_f ## just future scores, hardcoding baseline=0 for nonrepeat
-
-    # --- pick only encoded elements
-    selected_vals = improvement[enc_f]  # 1D: all True positions flattened
-
-    # Optional: sanity checks per row (one-hot expectation)
-    # rows_with_any = enc_f.any(axis=1).sum()
-    # rows_with_none = (~enc_f.any(axis=1)).sum()
-    # rows_with_multi = (enc_f.sum(axis=1) > 1).sum()
-
-    # --- warn on unexpected negatives (beyond tiny FP noise)
-    if np.any(selected_vals < -1e-12):
-        print("Warning: selected improvements contain negative values.")
-
-    return safe_mean_std(selected_vals)
-
-
-def average_scores_by_missing_counts(missing_counts, current_scores, future_scores, encoding):
-    avg_lst = []
-    std_lst = []
-    
-    for n in missing_counts:
-        print(f"Computing averages for missing count: {n}")
-        decoded_current_scores = decode_missing_indicator(current_scores)  # shape (N, 14)
-
-        row_mask = filter_sessions_by_missing_count(decoded_current_scores, n)
-        print(f"Number of sessions with {n} missing domains: {np.sum(row_mask)}")
-
-        encoding_mask = (encoding == 1)  # shape (N, 14)
-
-        avg, std = compute_avg_std_selected(
-            cur_scores=decoded_current_scores,      # (N,14)
-            future_scores=future_scores,    # (N,14)
-            row_mask=row_mask,                      # (N,)
-            encoding_mask=encoding_mask          # (N,14)
-        )
-
-        avg_lst.append(avg)
-        std_lst.append(std)
-
-    return avg_lst, std_lst

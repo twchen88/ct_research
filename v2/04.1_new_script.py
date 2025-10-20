@@ -4,7 +4,6 @@ import numpy as np
 
 import src.experiments.file_io as file_io
 import src.experiments.aggregate_average as core
-import src.experiments.new_agg_avg as new_core
 import src.experiments.shared as shared
 import src.viz.aggregate_average as viz
 
@@ -66,15 +65,14 @@ def aggregate_average_pipeline(test_x, test_y, model, figure_path, run_type):
     missing_counts = list(range(0, 14))
 
     # ground truth stats
-    avg_lst_gt, std_lst_gt = new_core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, future_score_gt, gt_encoding)
+    avg_lst_gt, std_lst_gt = core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, future_score_gt, gt_encoding)
 
     # model predictions
-    valid_mask = new_core.find_valid_domains(cur_score_gt_decoded, run_type=run_type)
-    ## random strategy
-    ## best strategy
-    (best_enc, best_pred), (rand_enc, rand_pred) = new_core.choose_best_and_random(model, cur_score_gt, missing_counts, valid_mask)
-    avg_lst_best, std_lst_best = new_core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, best_pred, best_enc)
-    avg_lst_rand, std_lst_rand = new_core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, rand_pred, rand_enc)
+    valid_mask = core.find_valid_domains(cur_score_gt_decoded, run_type=run_type)
+
+    (best_enc, best_pred), (rand_enc, rand_pred) = core.choose_best_and_random(model, cur_score_gt, missing_counts, valid_mask)
+    avg_lst_best, std_lst_best = core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, best_pred, best_enc)
+    avg_lst_rand, std_lst_rand = core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, rand_pred, rand_enc)
 
     avg_dict = {
         "best": avg_lst_best,
@@ -118,7 +116,7 @@ if __name__ == "__main__":
     seed = config["settings"]["seed"]
 
     ## set output directory
-    # _, output_destination = create_run_dir(destination_base, args.tag, run_type)
+    _, output_destination = create_run_dir(destination_base, args.tag, run_type)
 
     ## set global seed
     set_global_seed(seed)
@@ -160,50 +158,30 @@ if __name__ == "__main__":
     test_y = test_y[mask]
     test_predictions = test_predictions[mask]
 
-    # ## debug
-    # missing_counts = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-    # for mc in missing_counts:
-    #     print("=======before run======= missing count:", mc)  # Debugging line to track progress
-    #     enc, score = core.split_encoding_and_scores(test_x, dims=14)
-    #     cur_scores_decoded = new_core.decode_missing_indicator(score)
-    #     future_scores = test_y
-
-    #     mc_mask = new_core.mask_by_missing_count(cur_scores_decoded, mc)
-
-    #     # filter by missing count
-    #     filtered_cur = cur_scores_decoded[mc_mask]
-    #     filtered_fut = future_scores[mc_mask]
-    #     filtered_enc = enc[mc_mask]
-    #     print("current not decoded: ", score[mc_mask][0])  # Debugging line to check for negatives
-    #     print("current: ", filtered_cur[0])  # Debugging line to check for negatives
-    #     print("future: ", filtered_fut[0])  # Debugging line to check
-    #     print("encoding: ", filtered_enc[0])  # Debugging line to check for negatives
-
-
     ## general setup
     figure_names = ["accuracy_assessment.png", "aggregate_average.png"]
 
     ## (1) find ground truth std and prediction MAE
-    # accuracy_assessment_pipeline(test_x, test_y, test_predictions, output_destination, figure_names[0], run_type)
+    accuracy_assessment_pipeline(test_x, test_y, test_predictions, output_destination, figure_names[0], run_type)
 
     ## (2) predict scores based on strategy
     # load model
     model = shared.load_model(model_path=model_source, device=device)
 
-    # aggregate_average_figure_path = output_destination / figure_names[1]
+    aggregate_average_figure_path = output_destination / figure_names[1]
     
     # run aggregate average pipeline
     aggregate_average_pipeline(
         test_x=test_x,
         test_y=test_y,
         model=model,
-        figure_path=None,
+        figure_path=aggregate_average_figure_path,
         run_type=run_type)
 
     # save metadata
-    # save_metadata(
-    #     output_path=output_destination,
-    #     config=config,
-    #     git_commit_hash=git_commit_hash,
-    #     figure_paths=figure_names
-    # )
+    save_metadata(
+        output_path=output_destination,
+        config=config,
+        git_commit_hash=git_commit_hash,
+        figure_paths=figure_names
+    )

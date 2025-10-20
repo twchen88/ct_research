@@ -14,7 +14,6 @@ from src.utils.reproducibility import set_global_seed
 from src.utils.metadata import get_git_commit_hash
 from src.utils.config_loading import load_yaml_config
 
-
 def create_run_dir(base_dir: str, tag: str, run_type: str):
     timestamp = datetime.now().strftime("%Y%m%d")
     tag_part = f"_{tag}"
@@ -36,8 +35,6 @@ def save_metadata(output_path, config, git_commit_hash, figure_paths):
         yaml.dump(metadata, f, indent=4)
     print(f"Metadata saved to {metadata_path}")
 
-
-
 def accuracy_assessment_pipeline(test_x, test_y, test_predictions, output_destination, figure_path, run_type):
     missing_counts, mean_errors_list, ground_truth_std_list, ground_truth_dict = core.evaluate_error_by_missing_count(
         test_x=test_x,
@@ -58,41 +55,39 @@ def accuracy_assessment_pipeline(test_x, test_y, test_predictions, output_destin
         run_type=run_type
     )
 
-
 def aggregate_average_pipeline(test_x, test_y, model, figure_path, run_type):
     # split encoding and scores
     gt_encoding, cur_score_gt = core.split_encoding_and_scores(test_x, dims=14)
-    future_score_gt = test_y
 
+    cur_score_gt_decoded = core.decode_missing_indicator(cur_score_gt)
+    future_score_gt = test_y
     # define missing counts
     missing_counts = list(range(0, 14))
 
-    # get scores based on strategy
-    best_encoding, future_scores_best = core.find_best_idx_pred(model, cur_score_gt, future_score_gt, missing_counts, run_type)
-    random_encoding, future_scores_random = core.find_random_predictions(model, cur_score_gt, run_type)
+    # ground truth stats
+    avg_lst_gt, std_lst_gt = core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, future_score_gt, gt_encoding)
 
-    print("Calculating averages by missing counts...")
-    print("Going through best strategy...")
-    avg_lst_best, std_lst_best = core.average_scores_by_missing_counts(missing_counts, cur_score_gt, future_scores_best, best_encoding)
-    print("Going through random strategy...")
-    avg_lst_random, std_lst_random = core.average_scores_by_missing_counts(missing_counts, cur_score_gt, future_scores_random, random_encoding)
-    print("Going through ground truth...")
-    avg_lst_gt, std_lst_gt = core.average_scores_by_missing_counts(missing_counts, cur_score_gt, future_score_gt, gt_encoding)
+    # model predictions
+    valid_mask = core.find_valid_domains(cur_score_gt_decoded, run_type=run_type)
+
+    (best_enc, best_pred), (rand_enc, rand_pred) = core.choose_best_and_random(model, cur_score_gt, missing_counts, valid_mask)
+    avg_lst_best, std_lst_best = core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, best_pred, best_enc)
+    avg_lst_rand, std_lst_rand = core.average_scores_by_missing_counts(missing_counts, cur_score_gt_decoded, rand_pred, rand_enc)
 
     avg_dict = {
         "best": avg_lst_best,
-        "random": avg_lst_random,
+        "random": avg_lst_rand,
         "gt": avg_lst_gt
     }
 
     std_dict = {
         "best": std_lst_best,
-        "random": std_lst_random,
+        "random": std_lst_rand,
         "gt": std_lst_gt
     }
 
     if run_type == "nonrepeat":
-        for name, arr in {"best": avg_lst_best, "random": avg_lst_random, "gt": avg_lst_gt}.items():
+        for name, arr in {"best": avg_lst_best, "random": avg_lst_rand, "gt": avg_lst_gt}.items():
             arr_np = np.asarray(arr)
             if (arr_np < 0).any():
                 idxs = np.where(arr_np < 0)[0].tolist()
@@ -159,16 +154,16 @@ if __name__ == "__main__":
     # if run type is non-repeat, filter for only non-repeat sessions
     mask = repeat_mask if is_repeat else ~repeat_mask
 
-    test_x = test_x[repeat_mask]
-    test_y = test_y[repeat_mask]
-    test_predictions = test_predictions[repeat_mask]
+    test_x = test_x[mask]
+    test_y = test_y[mask]
+    test_predictions = test_predictions[mask]
 
     ## general setup
     figure_names = ["accuracy_assessment.png", "aggregate_average.png"]
 
     ## (1) find ground truth std and prediction MAE
     accuracy_assessment_pipeline(test_x, test_y, test_predictions, output_destination, figure_names[0], run_type)
-    
+
     ## (2) predict scores based on strategy
     # load model
     model = shared.load_model(model_path=model_source, device=device)
