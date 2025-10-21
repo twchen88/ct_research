@@ -1,7 +1,6 @@
 import pymysql
 import pandas as pd
 from sshtunnel import SSHTunnelForwarder
-from datetime import datetime
 
 import ct.utils.config_loading as config_loading
 
