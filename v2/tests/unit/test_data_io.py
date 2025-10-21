@@ -1,12 +1,10 @@
 
 """
-Combined tests for ct.data.data_io
-
 This file groups all test classes targeting functions in data_io.py:
 - Test_read_preprocessed_session_file
-- Test_read_raw_session_chunks (xfail skeleton)
-- Test_write_sessions_to_csv (xfail skeleton)
-- Test_write_sessions_to_npy (xfail skeleton)
+- Test_read_raw_session_chunks
+- Test_write_sessions_to_csv
+- Test_write_sessions_to_npy
 """
 from __future__ import annotations
 import importlib
