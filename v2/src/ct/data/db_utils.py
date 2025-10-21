@@ -28,7 +28,7 @@ def connect(filename: str) -> pymysql.connections.Connection:
     config_dict = config_loading.load_json_config(filename)
     print("Connecting to database...")
 
-    ssh_address = config_dict["ssh_address"]
+    ssh_address = config_dict["ssh_address_or_host"]
     ssh_user = config_dict["ssh_user"]
     key_path = config_dict["key_path"]
     host_name = config_dict["host_name"]
