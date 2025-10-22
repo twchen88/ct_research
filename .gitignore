@@ -1,22 +1,96 @@
-# main directory/all
-**/__pycache__/
-**/.DS_Store
-**/.pytest_cache/
-**/*.pt
-**/*.npz
-*.egg-info
+# ------------------------------------------------------------
+# OS / Editor cruft
+# ------------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ------------------------------------------------------------
+# Python build / packaging
+# ------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+*.dylib
+*.egg-info/
+.eggs/
 build/
 dist/
+pip-wheel-metadata/
 
-# v1
-v1/misc/
-v1/data/
-v1/model/
-v1/artifacts/
+# ------------------------------------------------------------
+# Tests / Coverage / Caches
+# ------------------------------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+.cache/
 
-# v2
-v2/data/
-v2/sql/
-v2/config/connection/
-v2/old_data/
-v2/config/debug/
+# ------------------------------------------------------------
+# Notebooks
+# ------------------------------------------------------------
+.ipynb_checkpoints/
+
+# ------------------------------------------------------------
+# Logs
+# ------------------------------------------------------------
+*.log
+logs/
+sandbox/logs/
+sandbox/*.log
+
+# ------------------------------------------------------------
+# Secrets (DO NOT COMMIT)
+# ------------------------------------------------------------
+*.pem
+*.key
+*.crt
+*.json
+credentials.txt
+
+# ------------------------------------------------------------
+# Project-generated artifacts & heavy outputs
+# (Keep configs tracked; these are runtime/results directories)
+# ------------------------------------------------------------
+wandb/
+outputs/
+training_runs/
+trajectory/
+data/
+old_data/
+sql/
+
+# If you keep small sample data under data/, whitelist files like:
+# !data/README.md
+# !data/samples/**
+
+# ------------------------------------------------------------
+# Large ML artifacts
+# ------------------------------------------------------------
+*.pt
+*.pth
+*.npz
+*.npy
+
+# ------------------------------------------------------------
+# CSV outputs (optional — uncomment if your pipeline generates CSVs)
+# ------------------------------------------------------------
+# *.csv
+
+# ------------------------------------------------------------
+# Package detritus that sometimes appears
+# ------------------------------------------------------------
+src/ct.egg-info/
+
+# ------------------------------------------------------------
+# Sandbox temp files
+# ------------------------------------------------------------
+sandbox/git_commit_hash.txt
+sandbox/*.tmp

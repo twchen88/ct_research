@@ -1,0 +1,4 @@
+### encode next step test data from v1
+
+source_path: "old_data/next_step_test_data.csv"
+target_path: "old_data/next_step_test_data_encoded.npy"
