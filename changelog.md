@@ -2,21 +2,21 @@
 
 ## Versions
 
-### v1/
+### v0/
 - Legacy code, experiments, and datasets
 - Structure is nonexistent
 - See `v1/provenance_log.md`
 
-### v2/
+### v1/
 - Refactored and documented from v1 code
 - Thoroughly debugged after dissertation proposal
 - Uses modular code, config files, metadata files
 - See `v2/provenance_log.md`
 
-#### v2.1/
+#### v1.1/
 - Added gradient skipping and percentile scores as options for preprocessing and training
 
-### v3/
+#### v1.2/
 - Added proposed work and experiments from dissertation proposal
 - See `v3/provenance_log.md`
 ---
