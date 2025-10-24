@@ -66,6 +66,7 @@ trajectory/
 data/
 old_data/
 sql/
+*.joblib
 
 # If you keep small sample data under data/, whitelist files like:
 # !data/README.md
