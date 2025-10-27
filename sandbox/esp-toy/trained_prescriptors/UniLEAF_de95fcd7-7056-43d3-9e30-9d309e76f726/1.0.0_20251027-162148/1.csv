@@ -1,0 +1,6 @@
+id,identity,derived_metric,is_elite
+1_1,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_de95fcd7-7056-43d3-9e30-9d309e76f726', 'unique_id': '1_1', 'origin': '(none)'}",0.014116706693360093,True
+1_2,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_de95fcd7-7056-43d3-9e30-9d309e76f726', 'unique_id': '1_2', 'origin': '(none)'}",0.011702014586522959,True
+1_3,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_de95fcd7-7056-43d3-9e30-9d309e76f726', 'unique_id': '1_3', 'origin': '(none)'}",0.010155196170519196,True
+1_4,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_de95fcd7-7056-43d3-9e30-9d309e76f726', 'unique_id': '1_4', 'origin': '(none)'}",0.015481998100232527,True
+1_5,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_de95fcd7-7056-43d3-9e30-9d309e76f726', 'unique_id': '1_5', 'origin': '(none)'}",0.021406317360009572,True

@@ -1,0 +1,2 @@
+generation,checkpoint_id,max_derived_metric,min_derived_metric,mean_derived_metric,elites_mean_derived_metric,cid_min_derived_metric,cid_max_derived_metric
+1,UniLEAF_de95fcd7-7056-43d3-9e30-9d309e76f726/1/20251027-222148,0.021406317360009572,0.010155196170519196,0.014572446582128867,0.014572446582128867,1_3,1_5
