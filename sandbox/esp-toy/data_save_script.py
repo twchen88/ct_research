@@ -36,10 +36,6 @@ def save_data_as_csv(input_path: Union[str, Path], output_path: Union[str, Path]
     if data.ndim == 1:
         data = data.reshape(-1, 1)
 
-    # Take only the first 42 columns
-    data = data[:, :42]
-    columns = columns[:42]
-
     if data.shape[1] != len(columns):
         raise ValueError(f"Number of columns ({len(columns)}) does not match data shape {data.shape}")
 
