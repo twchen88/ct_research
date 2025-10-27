@@ -79,6 +79,7 @@ sql/
 *.pth
 *.npz
 *.npy
+*.h5
 
 # ------------------------------------------------------------
 # CSV outputs (optional — uncomment if your pipeline generates CSVs)
