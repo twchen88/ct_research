@@ -1,0 +1,11 @@
+id,identity,Survived,is_elite
+1_1,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_184be189-265f-ce68-351a-33cbccd4f49d', 'unique_id': '1_1', 'origin': '(none)'}",0.6253551912568306,False
+1_2,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_184be189-265f-ce68-351a-33cbccd4f49d', 'unique_id': '1_2', 'origin': '(none)'}",0.7060109289617486,True
+1_3,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_184be189-265f-ce68-351a-33cbccd4f49d', 'unique_id': '1_3', 'origin': '(none)'}",0.7240983606557376,True
+1_4,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_184be189-265f-ce68-351a-33cbccd4f49d', 'unique_id': '1_4', 'origin': '(none)'}",0.6313114754098361,False
+1_5,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_184be189-265f-ce68-351a-33cbccd4f49d', 'unique_id': '1_5', 'origin': '(none)'}",0.706120218579235,True
+1_6,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_184be189-265f-ce68-351a-33cbccd4f49d', 'unique_id': '1_6', 'origin': '(none)'}",0.7024043715846996,True
+1_7,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_184be189-265f-ce68-351a-33cbccd4f49d', 'unique_id': '1_7', 'origin': '(none)'}",0.7233333333333334,True
+1_8,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_184be189-265f-ce68-351a-33cbccd4f49d', 'unique_id': '1_8', 'origin': '(none)'}",0.6804371584699455,False
+1_9,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_184be189-265f-ce68-351a-33cbccd4f49d', 'unique_id': '1_9', 'origin': '(none)'}",0.6292896174863388,False
+1_10,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_184be189-265f-ce68-351a-33cbccd4f49d', 'unique_id': '1_10', 'origin': '(none)'}",0.6946448087431695,False
