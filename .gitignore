@@ -96,3 +96,4 @@ src/ct.egg-info/
 # ------------------------------------------------------------
 sandbox/git_commit_hash.txt
 sandbox/*.tmp
+sandbox/**/*_real.csv
