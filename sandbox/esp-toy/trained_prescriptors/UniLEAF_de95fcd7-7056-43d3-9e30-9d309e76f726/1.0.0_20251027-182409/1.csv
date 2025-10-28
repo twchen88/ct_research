@@ -1,0 +1,4 @@
+id,identity,derived_metric,is_elite
+1_1,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_de95fcd7-7056-43d3-9e30-9d309e76f726', 'unique_id': '1_1', 'origin': '(none)'}",0.07089484471533113,False
+1_2,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_de95fcd7-7056-43d3-9e30-9d309e76f726', 'unique_id': '1_2', 'origin': '(none)'}",0.1531074900008744,False
+1_3,"{'ancestor_count': 0, 'ancestor_ids': [], 'birth_generation': 1, 'domain_name': None, 'experiment_version': 'UniLEAF_de95fcd7-7056-43d3-9e30-9d309e76f726', 'unique_id': '1_3', 'origin': '(none)'}",0.16948839342022176,True
