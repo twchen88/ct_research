@@ -22,6 +22,9 @@ def connect_engine(filename: str) -> Iterator[Engine]:
     """
     Open an SSH tunnel and yield a SQLAlchemy Engine suitable for pandas.read_sql.
     Closes the tunnel automatically when the context exits.
+
+    Parameters:
+        filename (str): Path to the JSON configuration file containing connection details.
     """
     cfg = config_loading.load_json_config(filename)
     print("Connecting to database (via SQLAlchemy)...")
