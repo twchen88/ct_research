@@ -42,19 +42,20 @@ if __name__ == "__main__":
     config = config_loading.load_yaml_config(args.config)
     print(f"SQL File Path: {config['source']['sql_file_path']}")
 
-    ## establish connection to the database
-    con = None
+    # establish connection to the database (via SQLAlchemy Engine)
     try:
-        con = db_utils.connect(config["source"]["sql_params"])
-        print("Connection established.")
-    except Exception as e:
-        print(f"Error connecting to the database: {e}")
+        from pandas import DataFrame  # optional, just for type hints / clarity
 
-    ## load SQL query results from SQL file
-    print("Loading SQL query results...")
-    if con is None:
-        raise Exception("Database connection could not be established. Exiting.")
-    data = db_utils.load_sql(config["source"]["sql_file_path"], con)
+        with db_utils.connect_engine(config["source"]["sql_params"]) as engine:
+            print("Connection established.")
+
+            # load SQL query results from SQL file (or raw SQL string)
+            print("Loading SQL query results...")
+            data: DataFrame = db_utils.load_sql(config["source"]["sql_file_path"], engine)
+
+    except Exception as e:
+        # If anything fails (tunnel, engine, read_sql), surface a clear error
+        raise RuntimeError(f"Failed to load data from SQL: {e}") from e
 
     ## save the query results to a CSV file
     output_data_file_path = config["output"]["dest"] + config["output"]["filename"]
@@ -63,12 +64,5 @@ if __name__ == "__main__":
 
     ## save metadata about the output file and configuration used to generate it
     save_metadata(output_data_file_path, args.config, config)
-
-    ## close the database connection
-    try:
-        if con is not None:
-            con.close()
-            print("Connection closed.")
-    except Exception as e:
-        print(f"Error closing the database connection: {e}")
+    
     print("Data pull completed successfully.")
