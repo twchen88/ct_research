@@ -1,6 +1,10 @@
 import pymysql
 import pandas as pd
+from contextlib import contextmanager
+from urllib.parse import quote_plus
+from sqlalchemy import create_engine, Engine
 from sshtunnel import SSHTunnelForwarder
+from typing import Iterator
 
 import ct.utils.config_loading as config_loading
 
@@ -13,45 +17,41 @@ This module contains functions that help with connecting to the database and run
 * save_metadata: save metadata about the output file and configuration used to generate it when running a query.
 """
 
-def connect(filename: str) -> pymysql.connections.Connection:
+@contextmanager
+def connect_engine(filename: str) -> Iterator[Engine]:
     """
-    Takes in the file name of the file that contains credentials and connection information, returns a connection object
-    
-    Parameters:
-        filename (str): The path to the JSON file containing the database connection configuration.
-
-    Returns:
-        pymysql.connections.Connection: A connection object to the MySQL database.
+    Open an SSH tunnel and yield a SQLAlchemy Engine suitable for pandas.read_sql.
+    Closes the tunnel automatically when the context exits.
     """
-    # load in credential file
-    config_dict = config_loading.load_json_config(filename)
-    print("Connecting to database...")
+    cfg = config_loading.load_json_config(filename)
+    print("Connecting to database (via SQLAlchemy)...")
 
-    ssh_address = config_dict["ssh_address_or_host"]
-    ssh_user = config_dict["ssh_user"]
-    key_path = config_dict["key_path"]
-    host_name = config_dict["host_name"]
-    user = config_dict["username"]
-    pw = config_dict["password"]
-
-    # port forwarding
     server = SSHTunnelForwarder(
-    ssh_address=(ssh_address, 22),
-    ssh_username=ssh_user,
-    ssh_pkey=key_path,
-    remote_bind_address=(host_name, 3306)
+        ssh_address=(cfg["ssh_address_or_host"], 22),
+        ssh_username=cfg["ssh_user"],
+        ssh_pkey=cfg["key_path"],
+        remote_bind_address=(cfg["host_name"], cfg.get("port", 3306)),
     )
-
     server.start()
+    try:
+        # Build a proper SQLAlchemy URL for MySQL+pymysql on the LOCAL forwarded port
+        user = cfg["username"]
+        pw = quote_plus(cfg["password"])  # URL-encode in case of special chars
+        host = f"127.0.0.1:{server.local_bind_port}"
+        db = cfg.get("database")  # optional; include if present
 
-    # connection to MySQL
-    con = pymysql.connect(user=user, passwd=pw, host='127.0.0.1', port=server.local_bind_port)
+        url = f"mysql+pymysql://{user}:{pw}@{host}" + (f"/{db}" if db else "")
 
-    print("Connection Successful")
+        engine = create_engine(
+            url,
+            pool_pre_ping=True,   # helps recover dropped connections
+        )
+        print("Connection successful (engine ready).")
+        yield engine
+    finally:
+        server.stop()
 
-    return con
-
-def load_sql(query: str, con: pymysql.connections.Connection) -> pd.DataFrame:
+def load_sql(query: str, con: Engine) -> pd.DataFrame:
     """
     Takes in a string of query or an SQL file and connection object, returns a dataframe with read results.
     

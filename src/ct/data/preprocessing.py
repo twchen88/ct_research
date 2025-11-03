@@ -44,15 +44,18 @@ def sort_by_start_time(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: DataFrame sorted by start time.
     """
-    df = df.copy()
-    df = df.sort_values(by='start_time').reset_index(drop=True)
+    df = df.sort_values(by='start_time', inplace=False).reset_index(drop=True)
     return df
 
 
 def find_usage_frequency(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Given a dataframe of all considered sessions, for each patient, find usage frequency in terms of unique days, 
-    return a dataframe with patient_id, usage_time, and unique_days.
+    Given a dataframe of all considered sessions for a patient, find usage frequency in terms of unique days,
+    return a dataframe with patient_id, usage_time, usage_freq, and unique_days.
+
+    Usage time is defined as the span from the first to last session (inclusive).
+    Unique days is defined as the number of distinct days the patient has practiced.
+    Usage frequency is defined as unique days divided by usage time.
 
     Parameters:
         df (pd.DataFrame): The DataFrame containing session data with 'patient_id' and 'start_time' columns.
@@ -60,7 +63,7 @@ def find_usage_frequency(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: DataFrame with 'patient_id', 'usage_time', 'unique_days', and 'usage_freq'.
     """
-    df = sort_by_start_time(df).copy()          # keep original intact
+    df = sort_by_start_time(df)
     df["start_date"] = df["start_time"].dt.date # strip time for distinct-day count
     # 1) distinct active days per patient
     unique_days = df.groupby("patient_id")["start_date"].nunique().rename("unique_days")
@@ -85,6 +88,7 @@ def process_row(row: pd.Series) -> Tuple[List[int], List[float]]:
             - values_a: List of integers representing domain IDs.
             - values_b: List of floats representing domain scores.
     """
+    assert 'domain_ids' in row and 'domain_scores' in row, "Row must contain 'domain_ids' and 'domain_scores' columns."
     values_a = [int(x.strip()) for x in str(row['domain_ids']).split(',')]
     values_b = [float(x.strip()) for x in str(row['domain_scores']).split(',')]
     return values_a, values_b
@@ -100,7 +104,7 @@ def extract_session_data(data: pd.DataFrame) -> pd.DataFrame:
         data (pd.DataFrame): The DataFrame containing session data with 'patient_id', 'domain_ids', 'domain_scores', and 'start_time' columns.
     
     Returns:
-        pd.DataFrame: A DataFrame with patient_id, domain encodings, previous scores, current scores, and start time."""
+        pd.DataFrame: A DataFrame with patient_id, domain encodings, previous scores, current scores, and start time. Information are recorded in this order for a total of 45 columns."""
     # Initialize variables
     session_row = [] # contents of a row (patient id, encoding, cur score, prev score...)
     overall = [] # aggregate of everything (n sessions x 45)
@@ -133,6 +137,8 @@ def extract_session_data(data: pd.DataFrame) -> pd.DataFrame:
         session_row.extend(cur_score.copy().tolist()) # target columns
         session_row.append(row["start_time"])
         session_row.append(row["start_time"].timestamp())
+
+        assert len(session_row) == 45, f"Expected 45 columns, got {len(session_row)}"
 
         # append row to overall, reset
         overall.append(session_row)
@@ -190,11 +196,11 @@ def filter_datetime_outliers(data: pd.DataFrame, eps_days: int, min_samples: int
 
 def convert_to_percentile(df: pd.DataFrame, columns: List[str] = [f"domain {i} score" for i in range(1, 15)] + [f"domain {i} target" for i in range(1, 15)]) -> pd.DataFrame:
     """
-    Convert specified columns in a DataFrame to percentiles.
+    Convert specified columns in a DataFrame to percentiles. Specified columns are usually domain scores and targets.
 
     Parameters:
         df (pd.DataFrame): The DataFrame containing the data.
-        columns (list): List of column names to convert to percentiles.
+        columns (list): List of column names to convert to percentiles. Default to domain scores and targets.
 
     Returns:
         pd.DataFrame: DataFrame with specified columns converted to percentiles.

@@ -16,7 +16,7 @@ It is separated into two main sections: write functions and read functions.
 ## Write functions
 def write_sessions_to_csv(file_name: str, df: pd.DataFrame) -> None:
     """
-    Writes a DataFrame to a CSV file.
+    Writes a DataFrame to a CSV file. Used in script 00 and 01 when saving to CSV.
     Parameters:
         file_name (str): The name of the file to write to.
         df (pd.DataFrame): The DataFrame to write.
@@ -27,7 +27,7 @@ def write_sessions_to_csv(file_name: str, df: pd.DataFrame) -> None:
 
 def write_sessions_to_npy(file_name: str, data: np.ndarray) -> None:
     """
-    Writes a numpy array to a .npy file.
+    Writes a numpy array to a .npy file. Used in script 02 when saving to numpy format.
 
     Parameters:
         file_name (str): The name of the file to write to.
@@ -41,7 +41,7 @@ def write_sessions_to_npy(file_name: str, data: np.ndarray) -> None:
 ## Read functions
 def read_raw_session_chunks(file_name: str, chunksize: int = 500_000) -> Iterator[pd.DataFrame]:
     """
-    Reads a CSV file in chunks and yields each chunk as a DataFrame.
+    Reads a CSV file in chunks and yields each chunk as a DataFrame. Used when processing large raw session data files in script 01 to save on memory.
     Parameters:
         file_name (str): The name of the CSV file to read.
         chunksize (int): The number of rows per chunk. Default is 500,000.
@@ -65,7 +65,7 @@ def read_raw_session_chunks(file_name: str, chunksize: int = 500_000) -> Iterato
 ## take in a string of file name of a CSV file and returns a dataframe
 def read_preprocessed_session_file(file_name: str) -> pd.DataFrame:
     """
-    Reads a preprocessed session CSV file into a DataFrame, with specified dtypes to reduce memory usage.
+    Reads a preprocessed session CSV file into a DataFrame, with specified dtypes to reduce memory usage. Used in script 02 to read preprocessed session data.
     Parameters:
         file_name (str): The name of the CSV file to read.
     Returns:
