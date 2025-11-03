@@ -17,7 +17,7 @@ def load_json_config(filename: str):
         filename (str): The path to the JSON file.
     """
     with open(filename, "r") as f:
-        print(f"Loading config from {filename}")
+        print(f"Loading YAML config from {filename}")
         config = json.load(f)
     return config
 
@@ -29,5 +29,6 @@ def load_yaml_config(filename: str):
         filename (str): The path to the YAML file.
     """
     with open(filename, "r") as f:
+        print(f"Loading YAML config from {filename}")
         config = yaml.safe_load(f)
     return config

@@ -9,6 +9,7 @@ This module provides utility functions to retrieve Git metadata.
 """
 
 def get_git_commit_hash():
+    """Return the current Git commit hash as a string."""
     try:
         result = subprocess.run(["git", "rev-parse", "HEAD"], stdout=subprocess.PIPE, text=True, check=True)
         return result.stdout.strip()
@@ -16,6 +17,7 @@ def get_git_commit_hash():
         return "unknown"
 
 def is_git_dirty():
+    """Return True if there are uncommitted changes in the Git repository."""
     try:
         result = subprocess.run(["git", "diff-index", "--quiet", "HEAD", "--"])
         return result.returncode != 0
