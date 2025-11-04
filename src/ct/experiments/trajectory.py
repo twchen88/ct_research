@@ -28,7 +28,7 @@ def max_prediction_from_difference(difference_matrix: np.ndarray, prediction_mat
     nan_mask = np.isnan(current_matrix)  # Boolean mask where True indicates NaN
 
     # Initialize arrays to store results
-    max_indices = np.full(difference_matrix.shape[0], np.nan)  # Store max indices
+    max_indices = np.full(difference_matrix.shape[0], np.nan, dtype=np.int64)  # Store max indices
     max_values = np.full(difference_matrix.shape[0], np.nan)  # Store corresponding prediction values
 
     # Iterate through each row
@@ -58,7 +58,7 @@ def min_prediction_from_difference(difference_matrix: np.ndarray, prediction_mat
     nan_mask = np.isnan(current_matrix)  # Boolean mask where True indicates NaN
 
     # Initialize arrays to store results
-    min_indices = np.full(difference_matrix.shape[0], np.nan)  # Store min indices
+    min_indices = np.full(difference_matrix.shape[0], np.nan, dtype=np.int64)  # Store min indices
     min_values = np.full(difference_matrix.shape[0], np.nan)  # Store corresponding prediction values
 
     # Iterate through each row
@@ -89,7 +89,7 @@ def random_prediction_from_difference(difference_matrix: np.ndarray, prediction_
     nan_mask = np.isnan(current_matrix)  # Boolean mask where True indicates NaN
 
     # Initialize arrays to store results
-    random_indices = np.full(difference_matrix.shape[0], np.nan)  # Store random indices
+    random_indices = np.full(difference_matrix.shape[0], np.nan, dtype=np.int64)  # Store random indices
     random_values = np.full(difference_matrix.shape[0], np.nan)  # Store corresponding prediction values
 
     # Iterate through each row
