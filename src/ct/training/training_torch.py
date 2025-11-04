@@ -47,17 +47,20 @@ def masked_mse_loss(pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor
 
 
 # =====================================================
-# Public loss API (compatible with 03_train_predictor.py)
+# Public loss API
 # =====================================================
 
 def MSE(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    """Mean Squared Error loss."""
     return torch.mean((pred - target) ** 2)
 
 def MAE(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    """Mean Absolute Error loss."""
     return torch.mean(torch.abs(pred - target))
 
 def get_loss_function(loss_function_name: str) -> Callable:
-    """Return a callable loss function.
+    """
+    Return a callable loss function.
     The returned callable has attribute `requires_mask: bool` so training/eval know whether to build masks.
     """
     name = loss_function_name.lower()
@@ -84,7 +87,8 @@ def get_loss_function(loss_function_name: str) -> Callable:
 # =====================================================
 
 def compute_non_missing_mask_from_inputs(inputs: torch.Tensor) -> torch.Tensor:
-    """Compute (B,14) mask from inputs (B,42).
+    """
+    Compute (B,14) mask from inputs (B,42).
     For each domain j, pair = (inputs[:, 14+2*j], inputs[:, 14+2*j+1]).
     Mark valid=1 if pair != (0,0) and != (1,1), else 0.
     Returns a float mask (same dtype/device as inputs).
@@ -120,9 +124,9 @@ class custom_dataset(Dataset):
         return self.X[idx], self.y[idx]
 
 
-def get_dataloader(dataset: Dataset, batch_size: int, suffle: bool = True) -> DataLoader:
-    """Return a DataLoader. Note: the parameter name is `suffle` (as used by 03_train_predictor.py)."""
-    return DataLoader(dataset, batch_size=batch_size, shuffle=bool(suffle))
+def get_dataloader(dataset: Dataset, batch_size: int, shuffle: bool = True) -> DataLoader:
+    """Return a DataLoader."""
+    return DataLoader(dataset, batch_size=batch_size, shuffle=bool(shuffle))
 
 
 def split_train_test(data: np.ndarray, ratio: float = 0.2, n_samples: Optional[int] = None) -> tuple[np.ndarray, np.ndarray]:
@@ -134,7 +138,8 @@ def split_train_test(data: np.ndarray, ratio: float = 0.2, n_samples: Optional[i
 
 
 def split_input_target(data: np.ndarray, dims: int = 42) -> Tuple[torch.Tensor, torch.Tensor]:
-    """Split full data (numpy) into input and target tensors.
+    """
+    Split full data (numpy) into input and target tensors.
     Inputs: first `dims` columns. Targets: remaining columns.
     """
     input_data = data[:, :dims]
@@ -147,6 +152,7 @@ def split_input_target(data: np.ndarray, dims: int = 42) -> Tuple[torch.Tensor, 
 # =====================================================
 
 def get_optimizer(optimizer_name: str, learning_rate: float, model: torch.nn.Module):
+    """Return a torch optimizer for the model."""
     name = optimizer_name.lower()
     if name == "adam":
         return torch.optim.Adam(model.parameters(), lr=learning_rate)

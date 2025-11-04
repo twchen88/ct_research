@@ -17,7 +17,11 @@ from typing import Dict, Any, Union
 def load_data(path: Union[str, os.PathLike]) -> np.ndarray:
     """Load model-ready data from disk.
     Supports .npy (NumPy array) and .npz with a 'data' key.
-    Returns a NumPy ndarray.
+
+    Parameters:
+        path (Union[str, os.PathLike]): Path to the data file.
+    Returns:
+        np.ndarray: Loaded data array.
     """
     p = Path(path)
     if not p.exists():
@@ -70,7 +74,7 @@ def save_metrics(metrics: Dict[str, Any], path: Union[str, os.PathLike]) -> str:
 
 def save_results(results: Dict[str, Any], path: Union[str, os.PathLike]) -> str:
     """Save arrays and histories as a .npz bundle.
-    Expected keys in 'results' may include: train_loss_history (list[float]),
+    Expected keys in 'results' include: train_loss_history (list[float]),
     val_loss_history (list[float]), test_x, test_y, test_predictions (ndarrays).
     """
     p = Path(path)

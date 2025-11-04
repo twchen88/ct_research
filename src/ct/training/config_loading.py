@@ -8,12 +8,21 @@ from typing import Any, Dict
 
 
 def load_yaml_config(path: str) -> Dict[str, Any]:
+    """Load a YAML configuration file and validate required keys.
+    
+    Parameters:
+        path (str): Path to the YAML configuration file.
+    
+    Returns:
+        Dict[str, Any]: Parsed configuration dictionary. Requires basic validation of necessary keys. Modify as needed.
+    """
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(f"Config file not found: {p}")
     with open(p, "r") as f:
         cfg = yaml.safe_load(f)
-    # (Optional) quick validation for the keys used in 03_train_predictor.py
+
+
     required = [
         ("settings", ["device", "run_desc", "seed", "test_ratio", "val_ratio"]),
         ("data", ["source", "destination_base"]),
@@ -25,4 +34,5 @@ def load_yaml_config(path: str) -> Dict[str, Any]:
         missing = [k for k in keys if k not in cfg[section]]
         if missing:
             raise KeyError(f"Missing keys in '{section}': {missing}")
+        
     return cfg
