@@ -48,6 +48,7 @@ def inference(model: torch.nn.Module, data: torch.Tensor) -> np.ndarray:
     Parameters:
         model (torch.nn.Module): The PyTorch model to use for inference.
         data (torch.Tensor): Input data as a PyTorch tensor.
+
     Returns:
         torch.Tensor: Model predictions as a PyTorch tensor.
     """
@@ -73,15 +74,18 @@ def add_encoding(scores : np.ndarray, encoding : np.ndarray) -> np.ndarray:
     return out
 
 
-def create_single_encoding(rows, cols, column_index):
+def create_single_encoding(rows: int, cols: int, column_index: int) -> np.ndarray:
     """
-    Given the number of rows and cols and index, return a numpy array of according size with 
-    all 0s except for specified column
+    Given the number of rows and cols and index, return a numpy array of according size with
+    all 0s except for values in the specified column
 
     Parameters:
         rows (int): number of rows
         cols (int): number of columns
         column_index (int): index of the column to set to 1
+
+    Returns:
+        np.ndarray: of shape (rows, cols) with specified column set to 1s
     """
     if column_index < 0 or column_index >= cols:
         raise ValueError("Column index is out of bounds.")

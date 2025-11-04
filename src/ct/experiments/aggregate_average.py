@@ -15,18 +15,30 @@ def filter_rows_by_sum(data: np.ndarray, col_range: slice, sum_threshold: int) -
     """
     Filters for rows where the sum of specified range of columns falls below a given threshold.
 
+    Parameters:
+        data (np.ndarray): The input data array.
+        col_range (slice): The range of columns to consider for summation.
+        sum_threshold (int): The threshold value for filtering.
+
     Returns:
-    - filtered_data (np.ndarray): Rows where column sum <= threshold
-    - sum_mask (np.ndarray): Boolean mask of kept rows
+        Tuple[np.ndarray, np.ndarray]: (filtered_data, sum_mask)
     """
     sum_mask = data[:, col_range].sum(axis=1) <= sum_threshold
     filtered_data = data[sum_mask]
     return filtered_data, sum_mask
 
-def find_missing_mask(x1, x2, eps=1e-8):
+def find_missing_mask(x1: np.ndarray, x2: np.ndarray, eps: float = 1e-8) -> np.ndarray:
     """
     Given two arrays x1 and x2, return a boolean mask where the pairs (same index) are missing
     - i.e., both values are equal and either 0 or 1 (i.e., [0,0] or [1,1]).
+    Parameters:
+        x1 (np.ndarray): First array.
+        x2 (np.ndarray): Second array.
+        eps (float): Tolerance for floating point comparison. Default to 1e-8.
+    
+    Returns:
+        np.ndarray: Boolean mask array where True indicates missing pairs.
+    
     """
     eq = np.isclose(x1, x2, atol=eps, rtol=0)  # they are (almost) equal
     is_0_or_1 = np.isclose(x1, 0.0, atol=eps, rtol=0) | np.isclose(x1, 1.0, atol=eps, rtol=0)  # they are (almost) 0 or 1
@@ -106,9 +118,33 @@ def predict_all_domains(model: torch.nn.Module, x: np.ndarray, loop_range: List[
 
 
 def mask_by_missing_count(scores: np.ndarray, missing_count: int) -> np.ndarray:
+    """
+    Create a boolean mask for rows where the number of missing values matches the specified count.
+
+    Parameters:
+        scores (np.ndarray): 2D array of scores with shape (n_rows, n_domains).
+        missing_count (int): Target number of missing values.
+
+    Returns:
+        np.ndarray: Boolean mask array where True indicates rows with exactly `missing_count` missing values
+    """
     return np.sum(np.isnan(scores), axis=1) == missing_count
 
-def average_scores_by_missing_counts(missing_counts: List[int], cur_scores: np.ndarray, future_scores: np.ndarray, encoding: np.ndarray) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+def average_scores_by_missing_counts(missing_counts: List[int], cur_scores: np.ndarray, future_scores: np.ndarray, encoding: np.ndarray) -> Tuple[List[float], List[float]]:
+    """
+    Compute average and standard deviation of score differences for each missing count.
+
+    Parameters:
+        missing_counts (List[int]): List of missing counts to evaluate.
+        cur_scores (np.ndarray): Current scores array with shape (n_rows, n_domains).
+        future_scores (np.ndarray): Future scores array with shape (n_rows, n_domains).
+        encoding (np.ndarray): Encoding array with shape (n_rows, n_domains).
+
+    Returns:
+        Tuple[List[np.ndarray], List[np.ndarray]]: (avg_lst, std_lst)
+            - avg_lst (List[np.ndarray]): List of average differences for each missing count.
+            - std_lst (List[np.ndarray]): List of standard deviations for each missing count.
+    """
     avg_lst = []
     std_lst = []
 
@@ -143,6 +179,18 @@ def average_scores_by_missing_counts(missing_counts: List[int], cur_scores: np.n
     return avg_lst, std_lst
 
 def find_valid_domains(scores: np.ndarray, run_type: str) -> np.ndarray:
+    """
+    Given scores and run_type, return a boolean mask indicating valid domains for choosing as a candidate for encoding. Used for simulating different experimental domain selecting strategies.
+    If repeat: only domains with observed scores (not missing) are valid.
+    If nonrepeat: only domains with missing scores are valid.
+
+    Parameters:
+        scores (np.ndarray): 2D array of scores with shape (n_rows, n_domains).
+        run_type (str): Type of run, either "repeat" or "nonrepeat".
+    
+    Returns:
+        np.ndarray: Boolean mask array where True indicates valid domains.
+    """
     is_missing = np.isnan(scores)
     if run_type == "repeat":
         valid_mask = ~is_missing
@@ -152,7 +200,20 @@ def find_valid_domains(scores: np.ndarray, run_type: str) -> np.ndarray:
         raise ValueError(f"Invalid run_type: {run_type}. Must be 'repeat' or 'nonrepeat'.")
     return valid_mask
 
-def create_best(cur_score, pred_score, valid_mask):
+def create_best(cur_score: np.ndarray, pred_score: np.ndarray, valid_mask: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Create the best encoding and predicted scores based on the current scores and predictions.
+
+    Parameters:
+        cur_score (np.ndarray): Current scores array with shape (n_rows, n_domains * 2).
+        pred_score (np.ndarray): Predicted scores array with shape (n_rows, n_domains).
+        valid_mask (np.ndarray): Boolean mask indicating valid domains, shape (n_rows, n_domains).
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: (best_enc, best_pred_scores)
+            - best_enc (np.ndarray): Best encoding array with shape (n_rows, n_domains).
+            - best_pred_scores (np.ndarray): Best predicted scores array with shape (n_rows, n_domains).
+    """
     rows, cols = valid_mask.shape
     best_enc = np.zeros((rows, cols), dtype=int)
     best_pred_scores = np.full((rows, cols), np.nan)
@@ -177,7 +238,20 @@ def create_best(cur_score, pred_score, valid_mask):
 
     return best_enc, best_pred_scores
 
-def create_random(model, cur_score, valid_mask):
+def create_random(model: torch.nn.Module, cur_score: np.ndarray, valid_mask: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Create a random encoding and predicted scores based on the current scores and predictions.
+
+    Parameters:
+        model (torch.nn.Module): The trained model for inference.
+        cur_score (np.ndarray): Current scores array with shape (n_rows, n_domains * 2).
+        valid_mask (np.ndarray): Boolean mask indicating valid domains, shape (n_rows, n_domains).
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: (rand_enc, rand_pred_scores)
+            - rand_enc (np.ndarray): Random encoding array with shape (n_rows, n_domains).
+            - rand_pred_scores (np.ndarray): Random predicted scores array with shape (n_rows, n_domains).
+    """
     rows, cols = valid_mask.shape
     rand_enc = np.zeros((rows, cols), dtype=int)
     rand_pred_scores = np.full((rows, cols), np.nan)
@@ -193,15 +267,33 @@ def create_random(model, cur_score, valid_mask):
     return rand_enc, rand_pred_scores
 
 
-def choose_best_and_random(model, cur_score, missing_counts, valid_mask):
+def choose_best_and_random(model: torch.nn.Module, cur_score: np.ndarray, missing_counts: List[int], valid_mask: np.ndarray) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
+    """
+    Choose the best and random encodings and predicted scores.
+
+    Parameters:
+        model (torch.nn.Module): The trained model for inference.
+        cur_score (np.ndarray): Current scores array with shape (n_rows, n_domains * 2).
+        missing_counts (List[int]): List of missing counts to evaluate.
+        valid_mask (np.ndarray): Boolean mask indicating valid domains, shape (n_rows, n_domains).
+
+    Returns:
+        Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
+            - ((best_enc, best_pred_scores), (rand_enc, rand_pred_scores))
+    """
     predictions_all_domains = predict_all_domains(model, cur_score, loop_range=missing_counts)
     best_enc, best_pred_scores = create_best(cur_score, predictions_all_domains, valid_mask)
-    return (best_enc, best_pred_scores), (create_random(model, cur_score, valid_mask))
+    random_enc, random_pred_scores = create_random(model, cur_score, valid_mask)
+    return (best_enc, best_pred_scores), (random_enc, random_pred_scores)
 
 def filter_n_missing(data: np.ndarray, n_missing: int) -> np.ndarray:
     """
     Filter rows where the number of missing domains (invalid score pairs) equals `n_missing`.
     Missing is defined as a score pair of [0, 0] or [1, 1].
+
+    Parameters:
+        data (np.ndarray): Array with shape (n_rows, >=42), assuming 14 score pairs start at col 14.
+        n_missing (int): Target number of missing score pairs.
 
     Returns:
         np.ndarray: Filtered array with only rows that have exactly `n_missing` invalid scores.
@@ -351,7 +443,23 @@ def filter_with_masks(data: np.ndarray, masks: List[np.ndarray]) -> np.ndarray:
         data = data[mask]
     return data
 
-def evaluate_error_by_missing_count(test_x, test_y, test_predictions, dims=14):
+def evaluate_error_by_missing_count(test_x: np.ndarray, test_y: np.ndarray, test_predictions: np.ndarray, dims: int = 14) -> Tuple[List[int], List[float], List[float], dict]:
+    """
+    Given test inputs and predictions, evaluate mean errors by missing count.
+
+    Parameters:
+        test_x (np.ndarray): Test input data with shape (n_rows, n_domains * 3; encoding + encoded current scores).
+        test_y (np.ndarray): Ground truth scores with shape (n_rows, n_domains).
+        test_predictions (np.ndarray): Predicted scores with shape (n_rows, n_domains).
+        dims (int): Number of domains. Default is 14 (n_domains).
+    
+    Returns:
+        Tuple[List[int], List[float], List[float], dict]: (missing_counts, mean_errors_list, ground_truth_std_list, ground_truth_dict)
+            - missing_counts (List[int]): List of missing counts evaluated.
+            - mean_errors_list (List[float]): List of mean absolute errors for each missing count
+            - ground_truth_std_list (List[float]): List of standard deviations of ground truth for each missing count.
+            - ground_truth_dict (dict): Dictionary mapping missing count to ground truth scores.
+    """
     encoding, cur_score = split_encoding_and_scores(test_x, dims=dims)
     future_score_gt = test_y
 
