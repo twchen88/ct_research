@@ -81,11 +81,11 @@ if __name__ == "__main__":
     test_x, test_y = training.split_input_target(test_data, dims=dims)
     # create datasets and dataloaders
     train_dataset = training.custom_dataset(train_x, train_y)
-    train_data_loader = training.get_dataloader(train_dataset, batch_size, suffle=True)
+    train_data_loader = training.get_dataloader(train_dataset, batch_size, shuffle=True)
     valid_dataset = training.custom_dataset(valid_x, valid_y)
-    valid_data_loader = training.get_dataloader(valid_dataset, batch_size, suffle=False)
+    valid_data_loader = training.get_dataloader(valid_dataset, batch_size, shuffle=False)
     test_dataset = training.custom_dataset(test_x, test_y)
-    test_data_loader = training.get_dataloader(test_dataset, batch_size, suffle=False)
+    test_data_loader = training.get_dataloader(test_dataset, batch_size, shuffle=False)
 
     ## training
     model = Predictor().to(device)
