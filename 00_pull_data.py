@@ -40,6 +40,11 @@ if __name__ == "__main__":
 
     ## load configuration file
     config = config_loading.load_yaml_config(args.config)
+    # check config version
+    if config.get("schema_version") == 1:
+    # either migrate or error cleanly
+        raise ValueError("Config schema_version=1 is no longer supported; please migrate to v2.")
+    
     print(f"SQL File Path: {config['source']['sql_file_path']}")
 
     # establish connection to the database (via SQLAlchemy Engine)

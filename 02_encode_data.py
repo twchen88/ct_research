@@ -44,6 +44,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     config = config_loading.load_yaml_config(args.config)
+    # check config version
+    if config.get("schema_version") == 1:
+    # either migrate or error cleanly
+        raise ValueError("Config schema_version=1 is no longer supported; please migrate to v2.")
+
     source_path = config['source_path']
     target_path = config['target_path']
     print(f"Source path: {source_path}")

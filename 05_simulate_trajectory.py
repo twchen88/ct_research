@@ -41,6 +41,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     config = config_loading.load_yaml_config(args.config)
     print(f"Loaded configuration from {args.config}")
+    # check config version
+    if config.get("schema_version") == 1:
+    # either migrate or error cleanly
+        raise ValueError("Config schema_version=1 is no longer supported; please migrate to v2.")
 
     ## set config variables
     output_base = config["settings"]["output_base"]

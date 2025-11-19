@@ -2,16 +2,16 @@ import argparse
 import torch
 import matplotlib.pyplot as plt
 
-import ct.training.file_io as file_io
-import ct.training.training_torch as training
-import ct.training.evaluation_torch as evaluation
+import ct.predictor.file_io as file_io
+import ct.predictor.training_torch as training
+import ct.predictor.evaluation_torch as evaluation
 import ct.utils.config_loading as config_loading
 import ct.viz.training as visualize
 
 from datetime import datetime
 from pathlib import Path
 
-from ct.training.model_torch import Predictor
+from ct.predictor.model_torch import Predictor
 from ct.utils.reproducibility import set_global_seed
 from ct.utils.metadata import get_git_commit_hash
 
@@ -33,6 +33,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = config_loading.load_yaml_config(args.config)
     print(f"Loaded configuration from {args.config}")
+    # check config version
+    if config.get("schema_version") == 1:
+    # either migrate or error cleanly
+        raise ValueError("Config schema_version=1 is no longer supported; please migrate to v2.")
 
     # set variables and other misc settings like device
     device = config["settings"]["device"]

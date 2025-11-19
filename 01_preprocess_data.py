@@ -45,6 +45,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     config = config_loading.load_yaml_config(args.config)
+    # check config version
+    if config.get("schema_version") == 1:
+    # either migrate or error cleanly
+        raise ValueError("Config schema_version=1 is no longer supported; please migrate to v2.")
+
     input_path = config['source']['directory'] + config['source']['filename']
     output_path = config['target']['directory'] + config['target']['filename']
     usage_frequency_threshold = config['filter_params']['usage_frequency']
