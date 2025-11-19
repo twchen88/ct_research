@@ -2,24 +2,23 @@
 
 ## Versions
 
-### v0/
+### v0
 - Legacy code, experiments, and datasets
 - Structure is nonexistent
-- See `v1/provenance_log.md`
 
-### v1/
+### v1
 - Refactored and documented from v1 code
-- Thoroughly debugged after dissertation proposal
 - Uses modular code, config files, metadata files
-- See `v2/provenance_log.md`
 
-#### v1.1/
+#### v1.1
 - Added gradient skipping and percentile scores as options for preprocessing and training
+- These features are not tested but moving onto next features and refactoring (note the bugs and fix in v2.0)
 
-#### v1.2/
-- Added proposed work and experiments from dissertation proposal
-- See `v3/provenance_log.md`
+### current
+- Time-series predictor approach, may break previous configs
+- Refactor code (mostly structure wise) to keep things up to date and easier to work with in the future with ESP
 ---
 
 ## Major Transitions
 - May 2025: Code Refactoring
+- November 2025: Smaller-scale refactoring, closer to data structures used in NeuroAI ESP
