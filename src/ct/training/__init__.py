@@ -1,3 +1,7 @@
-# src/ct/training/__init__.py
-__all__ = []          # you can leave it empty
-__version__ = "1.0.0" # optional; change manually
+"""
+Model training and evaluation utilities (PyTorch).
+"""
+
+from . import config_loading, evaluation_torch, file_io, model_torch, training_torch
+
+__all__ = ["config_loading", "evaluation_torch", "file_io", "model_torch", "training_torch"]

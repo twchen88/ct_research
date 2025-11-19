@@ -1,3 +1,7 @@
-# src/ct/viz/__init__.py
-__all__ = []          # you can leave it empty
-__version__ = "1.0.0" # optional; change manually
+"""
+Visualization helpers for data, training, and trajectory experiments.
+"""
+
+from . import aggregate_average, data, training, trajectory
+
+__all__ = ["aggregate_average", "data", "training", "trajectory"]

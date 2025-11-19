@@ -1,3 +1,7 @@
-# src/ct/data/__init__.py
-__all__ = []          # you can leave it empty
-__version__ = "1.0.0" # optional; change manually
+"""
+Data loading, preprocessing, and encoding utilities.
+"""
+
+from . import data_io, db_utils, encoding, preprocessing
+
+__all__ = ["data_io", "db_utils", "encoding", "preprocessing"]

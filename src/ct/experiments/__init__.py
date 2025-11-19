@@ -1,3 +1,7 @@
-# src/ct/experiments/__init__.py
-__all__ = []          # you can leave it empty
-__version__ = "1.0.0" # optional; change manually
+"""
+Experiment orchestration and experiment-specific helpers.
+"""
+
+from . import aggregate_average, file_io, shared, trajectory
+
+__all__ = ["aggregate_average", "file_io", "shared", "trajectory"]
