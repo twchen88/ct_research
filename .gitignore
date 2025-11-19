@@ -54,6 +54,7 @@ sandbox/*.log
 *.crt
 *.json
 credentials.txt
+config/connection/
 
 # ------------------------------------------------------------
 # Project-generated artifacts & heavy outputs
@@ -61,11 +62,8 @@ credentials.txt
 # ------------------------------------------------------------
 wandb/
 outputs/
-training_runs/
-trajectory/
 data/
 old_data/
-sql/
 *.joblib
 
 # If you keep small sample data under data/, whitelist files like:
