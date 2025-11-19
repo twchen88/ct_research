@@ -14,7 +14,7 @@
 - Added gradient skipping and percentile scores as options for preprocessing and training
 - These features are not tested but moving onto next features and refactoring (note the bugs and fix in v2.0)
 
-### current
+### current (v2.0.0-dev)
 - Time-series predictor approach, may break previous configs
 - Refactor code (mostly structure wise) to keep things up to date and easier to work with in the future with ESP
 ---
