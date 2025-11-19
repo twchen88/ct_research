@@ -14,3 +14,4 @@ source:
 target:
   directory: "data/preprocessed/"
   filename: "predictor_preprocessed_20250709.csv"
+schema_version: 1

@@ -2,3 +2,4 @@
 
 source_path: "data/preprocessed/predictor_preprocessed_20250609.csv"
 target_path: "data/encoded/predictor_encoded_20250613.npy"
+schema_version: 1

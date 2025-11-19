@@ -5,3 +5,4 @@ settings:
   model_path: "outputs/training_runs/run_20250618_approximate_test_v2/model.pt"
   device: "cpu"
   seed: 42
+schema_version: 1

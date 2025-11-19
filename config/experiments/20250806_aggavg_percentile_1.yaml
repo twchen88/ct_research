@@ -6,3 +6,4 @@ data:
   data_source: "outputs/training_runs/run_20250709_percentile_v1/results.npz"
   model_source: "outputs/training_runs/run_20250709_percentile_v1/model.pt"
   destination_base: "outputs/aggavg/"
+schema_version: 1

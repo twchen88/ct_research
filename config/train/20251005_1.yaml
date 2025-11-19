@@ -15,3 +15,4 @@ hyperparams:
   n_samples: 100000
   learning_rate: 0.001
   dims: 42
+schema_version: 1
