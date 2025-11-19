@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 
 """
 src/viz/data.py
@@ -51,3 +52,46 @@ def plot_filtering_visualization(df: pd.DataFrame, sessions_filter_df: pd.DataFr
 
     plt.show()
     plt.close()
+
+def plot_random_user_weekly_global(meta, Y, M_target, min_weeks=4):
+    users = meta["users"]
+    weeks_per_user = meta["weeks_per_user"]
+
+    # Build a list of candidate users with enough weeks and at least one observed week
+    candidate_idxs = []
+    for u_idx, weeks in enumerate(weeks_per_user):
+        T_u = len(weeks)
+        if T_u < min_weeks:
+            continue
+
+        y_u = Y[u_idx, :T_u, :]
+        m_u = M_target[u_idx, :T_u, :]
+        m_sum = m_u.sum(axis=1)
+        g_series = np.where(m_sum > 0, (y_u * m_u).sum(axis=1) / m_sum, np.nan)
+
+        if not np.all(np.isnan(g_series)):
+            candidate_idxs.append(u_idx)
+
+    if not candidate_idxs:
+        raise ValueError(f"No users found with at least {min_weeks} weeks and non-NaN scores.")
+
+    # Pick one at random
+    u_idx = int(np.random.choice(candidate_idxs))
+    weeks = weeks_per_user[u_idx]
+    T_u = len(weeks)
+
+    y_u = Y[u_idx, :T_u, :]
+    m_u = M_target[u_idx, :T_u, :]
+    m_sum = m_u.sum(axis=1)
+    g_series = np.where(m_sum > 0, (y_u * m_u).sum(axis=1) / m_sum, np.nan)
+
+    print(f"Chosen user index: {u_idx}, user id: {users[u_idx]}, weeks: {T_u}")
+
+    plt.figure(figsize=(8, 4))
+    plt.plot(weeks, g_series, marker="o")
+    plt.title(f"User {users[u_idx]} — Weekly global score")
+    plt.xlabel("Week")
+    plt.ylabel("Mean of observed domain scores")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
