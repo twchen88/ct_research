@@ -47,7 +47,7 @@ def save_json_config(config: dict, filename: str):
         filename (str): The path to the JSON file.
     """
     with open(filename, "w") as f:
-        logger.info(f"Saving JSON config to {filename}")
+        logger.info(f"Saving JSON file to {filename}")
         json.dump(config, f, indent=4)
 
 def save_yaml_config(config: dict, filename: str):
@@ -59,5 +59,5 @@ def save_yaml_config(config: dict, filename: str):
         filename (str): The path to the YAML file.
     """
     with open(filename, "w") as f:
-        logger.info(f"Saving YAML config to {filename}")
+        logger.info(f"Saving YAML file to {filename}")
         yaml.safe_dump(config, f)
