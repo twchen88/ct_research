@@ -5,7 +5,7 @@ import argparse
 import numpy as np
 from pathlib import Path
 
-import ct.utils.config_loading as config_loading
+import ct.utils.config_io as config_io
 import  ct.experiments.trajectory as core
 
 from ct.experiments.shared import load_model
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train a model with the given configuration.")
     parser.add_argument("--config", type=str, required=True, help="Path to the configuration file.")
     args = parser.parse_args()
-    config = config_loading.load_yaml_config(args.config)
+    config = config_io.load_yaml_config(args.config)
     print(f"Loaded configuration from {args.config}")
 
     ## set config variables

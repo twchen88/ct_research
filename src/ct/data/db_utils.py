@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, Engine
 from sshtunnel import SSHTunnelForwarder
 from typing import Iterator
 
-import ct.utils.config_loading as config_loading
+import ct.utils.config_io as config_io
 
 """
 src/data/dat_io.py
@@ -26,7 +26,7 @@ def connect_engine(filename: str) -> Iterator[Engine]:
     Parameters:
         filename (str): Path to the JSON configuration file containing connection details.
     """
-    cfg = config_loading.load_json_config(filename)
+    cfg = config_io.load_json_config(filename)
     print("Connecting to database (via SQLAlchemy)...")
 
     server = SSHTunnelForwarder(

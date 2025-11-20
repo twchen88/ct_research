@@ -4,7 +4,7 @@ import numpy as np
 from datetime import datetime
 from pathlib import Path
 
-import ct.utils.config_loading as config_loading
+import ct.utils.config_io as config_io
 import  ct.experiments.trajectory as core
 import ct.viz.trajectory as viz
 
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     parser.add_argument("--config", type=str, required=True, help="Path to the configuration file.")
     parser.add_argument("--tag", type=str, required=True, help="Tag to identify the run, describe the experiment in a few words.")
     args = parser.parse_args()
-    config = config_loading.load_yaml_config(args.config)
+    config = config_io.load_yaml_config(args.config)
     print(f"Loaded configuration from {args.config}")
     # check config version
     if config.get("schema_version") == 1:

@@ -12,7 +12,7 @@ from datetime import datetime
 
 from ct.utils.reproducibility import set_global_seed
 from ct.utils.metadata import get_git_commit_hash
-from ct.utils.config_loading import load_yaml_config
+from ct.utils.config_io import load_yaml_config
 
 def create_run_dir(base_dir: str, tag: str, run_type: str):
     timestamp = datetime.now().strftime("%Y%m%d")

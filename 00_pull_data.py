@@ -5,7 +5,7 @@ from pandas import DataFrame
 
 import ct.data.db_utils as db_utils
 import ct.data.data_io as data_io
-import ct.utils.config_loading as config_loading
+import ct.utils.config_io as config_io
 from ct.utils.metadata import get_git_commit_hash
 from ct.utils.logger import configure_logging, install_excepthook, get_logger
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     install_excepthook()
 
     ## load configuration file
-    config = config_loading.load_yaml_config(args.config)
+    config = config_io.load_yaml_config(args.config)
     # check config version
     if config.get("schema_version") == 1:
     # either migrate or error cleanly

@@ -3,7 +3,7 @@ import yaml
 import pandas as pd
 import numpy as np
 
-import ct.utils.config_loading as config_loading
+import ct.utils.config_io as config_io
 import ct.data.data_io as data_io
 import ct.data.encoding as encoding
 
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    config = config_loading.load_yaml_config(args.config)
+    config = config_io.load_yaml_config(args.config)
     # check config version
     if config.get("schema_version") == 1:
     # either migrate or error cleanly
