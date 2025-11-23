@@ -14,9 +14,18 @@
 - Added gradient skipping and percentile scores as options for preprocessing and training
 - These features are not tested but moving onto next features and refactoring (note the bugs and fix in v2.0)
 
-### current (v2.0.0-dev)
-- Time-series predictor approach, may break previous configs
-- Refactor code (mostly structure wise) to keep things up to date and easier to work with in the future with ESP
+---
+
+## Roadmap
+
+Planned for v2.x:
+
+- [ ] v2.0.0: structural refactor, config versioning, logging improvements
+- [ ] v2.1.0: support new model types (e.g., GRU-based predictor)
+- [ ] v2.2.0: add new training/evaluation pipelines
+- [ ] v2.3.0: add zero-prescriptor
+- [ ] v2.4.0: add unrolling experiments and visualizations
+
 ---
 
 ## Major Transitions
