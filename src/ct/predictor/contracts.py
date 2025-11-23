@@ -1,4 +1,3 @@
-import yaml
 import numbers
 
 import numpy as np
@@ -8,7 +7,6 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Tuple, Any, Optional, Type
 from sklearn.model_selection import train_test_split
 
-from ct.utils.config_io import save_yaml_config
 from ct.utils.logger import get_logger
 logger = get_logger(__name__)
 
@@ -55,11 +53,6 @@ class Predictor(ABC):
         
         # Store context and action columns for prediction
         self.context_actions_columns = self.cao_mapping["context"] + self.cao_mapping["actions"]
-        # Check
-        if len(cao_mapping["outcomes"]) > 1:
-            if not self.does_support_multiobjective():
-                logger.warning(f"{self.predictor_name} does NOT support multiple outputs but multiple outcomes were provided.")
-                raise ValueError(f"{self.predictor_name} does NOT support multiple outputs")
 
         self.column_length = {} # keeps track of number of values encodes outcome
         if data_df is not None:
@@ -100,29 +93,6 @@ class Predictor(ABC):
         # Internal Parameters that are used to store the
         # latest state of the model.
         self._trained_model = None
-
-    @property
-    @abstractmethod
-    def library(self) -> str:
-        """
-        :return the underlying library that implements this predictor, as a string
-        """
-
-    @property
-    @abstractmethod
-    def predictor_name(self) -> str:
-        """
-        :return: the name of the Predictor, as a string
-        """
-
-    @staticmethod
-    @abstractmethod
-    def does_support_multiobjective() -> bool:
-        """
-        This function returns if the predictor supports multiple outputs
-        or not.
-        :return multioutput: Bool
-        """
 
     @abstractmethod
     def build_model(self, model_params: Dict):
@@ -167,6 +137,29 @@ class Predictor(ABC):
         which a prediction is requested. Categorical columns contain one-hot vectors, e.g. [1, 0, 0]. Which means
         a row can be a list of arrays (1 per column), e.g.: [1, 0, 0], [1,0].
         :return a Pandas DataFrame of the predicted outcomes for each context and actions row.
+        """
+
+    @abstractmethod
+    def save_model(self, model_path: str, params_file_path: str) -> None:
+        """
+        Saves the trained model to the specified location
+        :param file_path: the name and path of the file to persist the bytes to
+        :return: nothing
+        """
+        
+    @abstractmethod
+    def load_saved_model(self, model_path: str, params_file_path: str) -> None:
+        """
+        Loads the trained model from the specified location
+        :param file_path: the name and path of the file to load the bytes from
+        :return: nothing
+        """
+
+    @abstractmethod
+    def evaluate_model(self,
+                       test_x: np.ndarray, test_y: np.ndarray) -> Dict[str, Any]:
+        """
+        Evaluates the trained model on the test data and returns evaluation metrics
         """
 
     def set_trained_model(self, trained_model) -> None:
@@ -232,17 +225,6 @@ class Predictor(ABC):
         return train_df, val_df, test_df
 
     @staticmethod
-    def export_metrics(metrics_dict: Dict[str, Any], file_path: str):
-        """
-        Save the model's training metrics to the specified location
-        :param metrics_dict: a dictionary containing metrics
-        :param file_path: the name and path of the file to persist the bytes to
-        :return: nothing
-        """
-        logger.info(f"Exporting metrics to {file_path}")
-        save_yaml_config(metrics_dict, file_path)
-
-    @staticmethod
     def get_data_xy_split(data_df: Optional[pd.DataFrame],
                           cao_mapping: Dict) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
         """
@@ -266,6 +248,3 @@ class Predictor(ABC):
         data_y_df = data_df[cao_mapping["outcomes"]]
 
         return data_x_df, data_y_df
-
-    def __str__(self):
-        return self.predictor_name
