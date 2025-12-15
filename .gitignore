@@ -63,6 +63,7 @@ config/connection/
 wandb/
 outputs/
 data/
+!src/ct/data/
 old_data/
 *.joblib
 
