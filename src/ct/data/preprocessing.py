@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from sklearn.cluster import DBSCAN
 
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Optional
 
 """
 src/data/preprocessing.py
