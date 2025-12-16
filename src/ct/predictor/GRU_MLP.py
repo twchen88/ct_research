@@ -1,15 +1,37 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.data import DataLoader
+from dataclasses import dataclass
+from torch.nn.utils.rnn import pack_padded_sequence
+
+from typing import Dict, Any, Optional
+
 class TemporalEncoderGRU(nn.Module):
     def __init__(self, d_in: int, d_hidden: int = 128, num_layers: int = 1, dropout: float = 0.0):
         super().__init__()
         self.gru = nn.GRU(
-            input_size=d_in, hidden_size=d_hidden, num_layers=num_layers,
-            batch_first=True, dropout=dropout if num_layers > 1 else 0.0
+            input_size=d_in,
+            hidden_size=d_hidden,
+            num_layers=num_layers,
+            batch_first=True,
+            dropout=dropout if num_layers > 1 else 0.0,
         )
         self.layer_norm = nn.LayerNorm(d_hidden)
 
-    def forward(self, seq: torch.Tensor) -> torch.Tensor:
-        out, _ = self.gru(seq)
-        return self.layer_norm(out[:, -1, :])   # [B, d_hidden]
+    def forward(self, seq: torch.Tensor, lengths: torch.Tensor) -> torch.Tensor:
+        """
+        seq: (B, T, D) padded
+        lengths: (B,) actual lengths (on CPU or GPU; we'll .cpu() for packing)
+        Returns: (B, d_hidden) embedding for MLP input
+        """
+        # Pack to ignore padding; enforce_sorted=False so we don't need to sort the batch
+        packed = pack_padded_sequence(seq, lengths.cpu(), batch_first=True, enforce_sorted=False)
+        _, h_n = self.gru(packed)  # h_n: (num_layers, B, d_hidden)
+
+        # last layer hidden state for each sequence = last valid timestep
+        h_last = h_n[-1]  # (B, d_hidden)
+        return self.layer_norm(h_last)
 
 
 class Predictor(nn.Module):
