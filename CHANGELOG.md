@@ -20,11 +20,12 @@
 
 Planned for v2.x:
 
-- [ ] v2.0.0: structural refactor, config versioning, logging improvements
-- [ ] v2.1.0: support new model types (e.g., GRU-based predictor)
-- [ ] v2.2.0: add new training/evaluation pipelines
-- [ ] v2.3.0: add zero-prescriptor
-- [ ] v2.4.0: add unrolling experiments and visualizations
+- [ ] v2.0.0: rework 06_esp_pipeline.ipynb
+- [ ] v2.1.0: structural refactor, config versioning, logging improvements
+- [ ] v2.2.0: support new model types (e.g., GRU-based predictor)
+- [ ] v2.3.0: add new training/evaluation pipelines
+- [ ] v2.4.0: add zero-prescriptor
+- [ ] v2.5.0: add unrolling experiments and visualizations
 
 ---
 
