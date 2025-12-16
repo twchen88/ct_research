@@ -62,9 +62,153 @@ def _coerce_numeric_list(xs: List[Any]) -> List[float]:
             continue
     return out
 
+def _latest_domain_score_per_week(long_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Input long_df columns (from consolidate):
+      patient_id, week_number, week_start_ts, start_ts, domain_id, domain_score
 
-def _parse_start_time_min(col: pd.Series) -> pd.Series:
-    return pd.to_datetime(col, utc=True, errors="coerce")
+    Output:
+      patient_id, week_number, week_start_ts, domain_id, latest_score
+    """
+    # sort so "last" is the most recent within the week
+    tmp = long_df.sort_values(["patient_id", "week_number", "domain_id", "start_ts"])
+    latest = (
+        tmp.groupby(["patient_id", "week_number", "week_start_ts", "domain_id"], as_index=False)
+           .tail(1)
+           .rename(columns={"domain_score": "latest_score"})
+    )
+    return latest[["patient_id", "week_number", "week_start_ts", "domain_id", "latest_score"]]
+
+
+def _avg_domain_score_per_week(long_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Input long_df columns:
+      patient_id, week_number, week_start_ts, domain_id, domain_score
+
+    Output:
+      patient_id, week_number, week_start_ts, domain_id, week_score
+    where week_score is the average score for that domain within that week.
+    """
+    avg = (
+        long_df.groupby(["patient_id", "week_number", "week_start_ts", "domain_id"], as_index=False)
+              .agg(week_score=("domain_score", "mean"))
+    )
+    return avg
+
+def _forward_fill_history(avg_long: pd.DataFrame, all_weeks: pd.DataFrame) -> pd.DataFrame:
+    """
+    avg_long:
+      patient_id, week_number, week_start_ts, domain_id, week_score  (avg within week)
+
+    all_weeks:
+      patient_id, week_number, week_start_ts  (includes missing weeks)
+    """
+    domains = pd.DataFrame({"domain_id": avg_long["domain_id"].unique()})
+    patients = all_weeks[["patient_id"]].drop_duplicates()
+
+    # patient x domain grid
+    grid = patients.merge(domains, how="cross")
+    grid = grid.merge(all_weeks, on="patient_id", how="left")
+
+    # join weekly averaged scores
+    grid = grid.merge(
+        avg_long,
+        on=["patient_id", "week_number", "week_start_ts", "domain_id"],
+        how="left",
+    )
+
+    grid = grid.sort_values(["patient_id", "domain_id", "week_number"])
+
+    # forward-fill last known weekly score
+    grid["score_ffill"] = grid.groupby(["patient_id", "domain_id"], sort=False)["week_score"].ffill()
+    grid["score_ffill"] = grid["score_ffill"].fillna(0.0)
+
+    avg_wide = grid.pivot_table(
+        index=["patient_id", "week_number"],
+        columns="domain_id",
+        values="score_ffill",
+        aggfunc="last",
+        fill_value=0.0,
+    ).sort_index(axis=1)
+
+    inv_wide = 1.0 - avg_wide
+
+    avg_wide.columns = [f"domain_{d}_avg" for d in avg_wide.columns.astype(str)]
+    inv_wide.columns = [f"domain_{d}_inv" for d in inv_wide.columns.astype(str)]
+
+    week_ts = all_weeks.set_index(["patient_id", "week_number"])[["week_start_ts"]]
+
+    return week_ts.join(avg_wide, how="left").join(inv_wide, how="left")
+
+def _make_all_weeks(long_df: pd.DataFrame) -> pd.DataFrame:
+    required = {"patient_id", "week_number", "week_start_ts"}
+    if not required.issubset(long_df.columns):
+        raise ValueError(f"long_df must contain {required}, got {set(long_df.columns)}")
+
+    # 1) per-patient max week (guaranteed column name)
+    max_weeks = (
+        long_df.groupby("patient_id", as_index=False)
+              .agg(max_week=("week_number", "max"))
+    )
+
+    # 2) expand to all weeks 0..max_week
+    parts = []
+    for pid, mx in zip(max_weeks["patient_id"].tolist(), max_weeks["max_week"].tolist()):
+        mx = int(mx)
+        parts.append(pd.DataFrame({"patient_id": pid, "week_number": np.arange(mx + 1, dtype=int)}))
+    all_weeks = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame(columns=["patient_id", "week_number"])
+
+    # 3) get each patient's week-0 anchor timestamp with an explicit named agg
+    first_week_start = (
+        long_df.groupby("patient_id", as_index=False)
+              .agg(first_week_start_ts=("week_start_ts", "min"))
+    )
+
+    # 4) merge and compute week_start_ts for every week_number
+    all_weeks = all_weeks.merge(first_week_start, on="patient_id", how="left")
+
+    all_weeks["week_start_ts"] = all_weeks["first_week_start_ts"] + pd.to_timedelta(
+        all_weeks["week_number"] * 7, unit="D"
+    )
+
+    # keep it clean
+    all_weeks = all_weeks.drop(columns=["first_week_start_ts"])
+
+    return all_weeks.sort_values(["patient_id", "week_number"]).reset_index(drop=True)
+
+import pandas as pd
+
+def _align_freq_to_all_weeks(freq_df: pd.DataFrame, all_weeks: pd.DataFrame) -> pd.DataFrame:
+    """
+    freq_df: output of encode_domains(long_df)
+      index: (patient_id, week_number)
+      columns: week_start_ts + domain_*_freq
+
+    all_weeks:
+      columns: patient_id, week_number, week_start_ts  (includes missing weeks)
+
+    Returns:
+      A frequency df with one row per (patient_id, week_number) in all_weeks
+      Missing weeks filled with 0s for *_freq.
+    """
+    # Base index from all_weeks
+    base = all_weeks.set_index(["patient_id", "week_number"])[["week_start_ts"]].copy()
+
+    # Join freq columns; missing weeks become NaN -> fill with 0
+    freq_cols = [c for c in freq_df.columns if c.endswith("_freq")]
+
+    # Make sure we don't duplicate week_start_ts on join
+    freq_only = freq_df.drop(columns=["week_start_ts"], errors="ignore")
+
+    out = base.join(freq_only, how="left")
+
+    if freq_cols:
+        out[freq_cols] = out[freq_cols].fillna(0).astype(int)
+    else:
+        # no freq cols found -> still return base
+        pass
+
+    return out
 
 
 class HistoryEncoder:
@@ -84,10 +228,6 @@ class HistoryEncoder:
         self.raw_data = raw_data.copy()
 
     def consolidate(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Returns a *long* dataframe with one row per (patient_id, week_number, domain_id occurrence):
-          patient_id, week_number, week_start_ts, domain_id, domain_score
-        """
         needed = ["patient_id", "domain_ids", "domain_scores", "start_time_min"]
         base = df.loc[:, [c for c in needed if c in df.columns]].copy()
 
@@ -95,51 +235,47 @@ class HistoryEncoder:
         if missing:
             raise ValueError(f"Missing required columns: {missing}")
 
-        # Parse timestamps
-        base["start_ts"] = _parse_start_time_min(base["start_time_min"])
+        # Parse timestamps (your start_time_min is datetime-like strings)
+        base["start_ts"] = pd.to_datetime(base["start_time_min"], utc=True, errors="coerce")
         base = base.dropna(subset=["start_ts"])
 
-        # Normalize domains into aligned lists
+        # Normalize lists
         base["domain_ids_list"] = base["domain_ids"].apply(_to_list)
         base["domain_scores_list"] = base["domain_scores"].apply(_to_list)
-
-        # Ensure scores are numeric
         base["domain_scores_list"] = base["domain_scores_list"].apply(_coerce_numeric_list)
 
-        # Align lengths per row (truncate to min length to keep id-score pairing)
-        def _align(row: pd.Series) -> Tuple[List[Any], List[float]]:
+        # Align lengths per row
+        def _align(row: pd.Series):
             ids = row["domain_ids_list"]
             scores = row["domain_scores_list"]
             m = min(len(ids), len(scores))
-            if m <= 0:
-                return [], []
-            return ids[:m], scores[:m]
+            return (ids[:m], scores[:m]) if m > 0 else ([], [])
 
         aligned = base.apply(_align, axis=1, result_type="expand")
         base["domain_ids_list"] = aligned[0]
         base["domain_scores_list"] = aligned[1]
-
-        # Drop sessions with no valid domain entries
         base = base[base["domain_ids_list"].map(len) > 0].copy()
 
-        # Compute per-user week_number as 7-day windows from first session
+        # Per-user relative week_number
         base = base.sort_values(["patient_id", "start_ts"])
         first_ts = base.groupby("patient_id", sort=False)["start_ts"].transform("min")
         delta_days = (base["start_ts"] - first_ts).dt.total_seconds() / (24 * 3600)
         base["week_number"] = np.floor(delta_days / 7.0).astype(int)
-
-        # A representative timestamp for the weekly record (week start anchored on first_ts)
         base["week_start_ts"] = first_ts + pd.to_timedelta(base["week_number"] * 7, unit="D")
 
-        # Explode into long format
-        long_df = base[["patient_id", "week_number", "week_start_ts", "domain_ids_list", "domain_scores_list"]].copy()
+        # Explode into long format AND KEEP start_ts
+        long_df = base[
+            ["patient_id", "week_number", "week_start_ts", "start_ts", "domain_ids_list", "domain_scores_list"]
+        ].copy()
+
         long_df = long_df.explode(["domain_ids_list", "domain_scores_list"], ignore_index=True)
         long_df = long_df.rename(columns={"domain_ids_list": "domain_id", "domain_scores_list": "domain_score"})
 
-        # Coerce domain_id to string to avoid mixed int/str column naming issues
-        long_df["domain_id"] = long_df["domain_id"].astype(str)
+        # domain_id is integer; keep as int if possible, else coerce
+        long_df["domain_id"] = pd.to_numeric(long_df["domain_id"], errors="coerce").astype("Int64")
         long_df["domain_score"] = pd.to_numeric(long_df["domain_score"], errors="coerce")
-        long_df = long_df.dropna(subset=["domain_score"])
+        long_df = long_df.dropna(subset=["domain_id", "domain_score"])
+        long_df["domain_id"] = long_df["domain_id"].astype(int)
 
         return long_df
 
@@ -223,25 +359,23 @@ class HistoryEncoder:
     def transform(self) -> pd.DataFrame:
         long_df = self.consolidate(self.raw_data)
 
-        freq_df = self.encode_domains(long_df)          # week_start_ts + domain_*_freq
-        perf_df = self.average_performance(long_df)     # week_start_ts + domain_*_avg + domain_*_inv
+        all_weeks = _make_all_weeks(long_df)
 
-        # Merge (keeping one week_start_ts)
-        out = freq_df.drop(columns=["week_start_ts"], errors="ignore").join(
-            perf_df, how="outer"
-        )
+        # Frequency (fill missing weeks with 0)
+        freq_df_observed = self.encode_domains(long_df)
+        freq_df = _align_freq_to_all_weeks(freq_df_observed, all_weeks)
 
-        # For domains not practiced: performance metrics -> (0,0)
-        perf_cols = [c for c in out.columns if c.endswith("_avg") or c.endswith("_inv")]
-        out[perf_cols] = out[perf_cols].fillna(0.0)
+        # Performance: average within week, then carry forward across weeks
+        avg_long = _avg_domain_score_per_week(long_df)
+        perf_hist_df = _forward_fill_history(avg_long, all_weeks)
 
-        # For domains never seen in a given week: freq already 0 from pivot; ensure any NAs are 0
+        out = freq_df.drop(columns=["week_start_ts"], errors="ignore").join(perf_hist_df, how="outer")
+
         freq_cols = [c for c in out.columns if c.endswith("_freq")]
         out[freq_cols] = out[freq_cols].fillna(0).astype(int)
 
-        # Sort by timestamp within patient
-        out = out.reset_index()
-        out = out.sort_values(["patient_id", "week_start_ts", "week_number"])
-        out = out.set_index(["patient_id", "week_number"])
+        perf_cols = [c for c in out.columns if c.endswith("_avg") or c.endswith("_inv")]
+        out[perf_cols] = out[perf_cols].fillna(0.0)
 
-        return out
+        out = out.reset_index().sort_values(["patient_id", "week_start_ts", "week_number"])
+        return out.set_index(["patient_id", "week_number"])
