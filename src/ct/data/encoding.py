@@ -1,5 +1,11 @@
+from __future__ import annotations
+
+import torch
 import pandas as pd
 import numpy as np
+from typing import Dict, Any
+
+from ct.predictor.GRU_MLP import TemporalEncoderGRU
 
 """
 src/data/encoding.py
@@ -9,6 +15,102 @@ Make preprocessed data numerically and structurally compatible with the input ex
 * filter_nonzero_rows: Filters rows in a DataFrame that have at most a specified number of zeros.
 * create_missing_indicator: Encodes a numpy array by replacing each value with a pair indicating whether it is NaN or not.
 """
+
+
+def weekly_df_to_gru_batch(
+    weekly_df: pd.DataFrame,
+    feature_cols: Optional[List[str]] = None,
+    device: torch.device | str = "cpu",
+    dtype: torch.dtype = torch.float32,
+) -> Tuple[torch.Tensor, torch.Tensor, List[int], List[str]]:
+    """
+    Convert HistoryEncoder output (filtered) into GRU inputs.
+
+    Expects:
+      - index is MultiIndex (patient_id, week_number)
+      - one row per patient-week
+      - numeric feature columns for GRU inputs
+
+    Returns:
+      X: (B, T_max, D) padded tensor
+      lengths: (B,) actual lengths (number of weeks per patient)
+      patient_ids: list of patient_ids aligned to batch rows
+      feature_cols: used feature columns
+    """
+    if not (isinstance(weekly_df.index, pd.MultiIndex) and weekly_df.index.names[:2] == ["patient_id", "week_number"]):
+        if {"patient_id", "week_number"}.issubset(weekly_df.columns):
+            df = weekly_df.set_index(["patient_id", "week_number"]).copy()
+        else:
+            raise ValueError("weekly_df must have MultiIndex (patient_id, week_number) or columns patient_id, week_number.")
+    else:
+        df = weekly_df.copy()
+
+    df = df.sort_index()
+
+    # Pick feature columns (default: all numeric columns except timestamps)
+    if feature_cols is None:
+        feature_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
+    if not feature_cols:
+        raise ValueError("No numeric feature columns found. Pass feature_cols explicitly.")
+
+    patient_ids: List[int] = []
+    seq_tensors: List[torch.Tensor] = []
+    lengths: List[int] = []
+
+    # group by patient_id (level 0)
+    for pid, g in df.groupby(level=0, sort=False):
+        g = g.droplevel(0).sort_index()  # index now week_number
+        arr = g[feature_cols].to_numpy(dtype=np.float32)  # (T_i, D)
+        if arr.shape[0] == 0:
+            continue
+        patient_ids.append(int(pid[0]) if isinstance(pid, tuple) else int(pid))
+        lengths.append(arr.shape[0])
+        seq_tensors.append(torch.tensor(arr, dtype=dtype))
+
+    if not seq_tensors:
+        raise ValueError("No sequences found after grouping. Is weekly_df empty?")
+
+    B = len(seq_tensors)
+    T_max = max(lengths)
+    D = seq_tensors[0].shape[1]
+
+    X = torch.zeros((B, T_max, D), dtype=dtype, device=device)
+    for i, seq in enumerate(seq_tensors):
+        t = seq.shape[0]
+        X[i, :t, :] = seq.to(device)
+
+    lengths_t = torch.tensor(lengths, dtype=torch.long, device=device)
+    return X, lengths_t, patient_ids, feature_cols
+
+
+@torch.no_grad()
+def encode_weekly_df_for_mlp(
+    model: TemporalEncoderGRU,
+    weekly_df: pd.DataFrame,
+    feature_cols: Optional[List[str]] = None,
+    device: torch.device | str = "cpu",
+) -> Dict[str, Any]:
+    """
+    Produces:
+      embeddings: (B, d_hidden) tensor for MLP input
+      patient_ids: aligned list of patient_ids
+      feature_cols: used feature cols
+      lengths: sequence lengths
+    """
+    model = model.to(device)
+    model.eval()
+
+    X, lengths, patient_ids, used_cols = weekly_df_to_gru_batch(
+        weekly_df, feature_cols=feature_cols, device=device
+    )
+
+    emb = model(X, lengths)  # (B, d_hidden)
+    return {
+        "embeddings": emb,
+        "patient_ids": patient_ids,
+        "feature_cols": used_cols,
+        "lengths": lengths,
+    }
 
 def filter_nonzero_rows(df: pd.DataFrame, max_zeros: int) -> pd.DataFrame:
     """
