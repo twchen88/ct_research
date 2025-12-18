@@ -121,14 +121,14 @@ def _forward_fill_history(avg_long: pd.DataFrame, all_weeks: pd.DataFrame) -> pd
 
     # forward-fill last known weekly score
     grid["score_ffill"] = grid.groupby(["patient_id", "domain_id"], sort=False)["week_score"].ffill()
-    grid["score_ffill"] = grid["score_ffill"].fillna(0.0)
+    # grid["score_ffill"] = grid["score_ffill"].fillna(0.0)
 
     avg_wide = grid.pivot_table(
         index=["patient_id", "week_number"],
         columns="domain_id",
         values="score_ffill",
         aggfunc="last",
-        fill_value=0.0,
+        # fill_value=0.0,
     ).sort_index(axis=1)
 
     inv_wide = 1.0 - avg_wide
