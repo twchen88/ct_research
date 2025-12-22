@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from ct.training.model_torch import Predictor
+from ct.predictor.contracts import Predictor
 
 """
 src/experiments/shared.py
