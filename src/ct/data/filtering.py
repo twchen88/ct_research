@@ -15,6 +15,9 @@ def _ensure_history_index(df: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("Expected MultiIndex (patient_id, week_number) or columns patient_id, week_number.")
     return out.sort_index()
 
+import numpy as np
+import pandas as pd
+
 def densify_week_grid_ffill_scores(
     df: pd.DataFrame,
     freq_cols: list[str],
@@ -28,14 +31,9 @@ def densify_week_grid_ffill_scores(
       - freq := 0
       - avg/inv := forward-filled (stable)
       - domain_i_obs := 1 if that domain had a real value that week, else 0
-
-    Note:
-      - We define "observed" BEFORE ffill: if avg/inv existed in original data for that week.
-      - For leading missing values (before first observation), we set avg/inv=0 and obs=0.
     """
     df = _ensure_history_index(df).copy()
 
-    # Ensure float for NaN handling
     df[freq_cols] = df[freq_cols].astype(float)
     df[avg_cols]  = df[avg_cols].astype(float)
     df[inv_cols]  = df[inv_cols].astype(float)
@@ -44,34 +42,33 @@ def densify_week_grid_ffill_scores(
     out_parts = []
 
     for pid, sub in df.groupby(level=0, sort=False):
-        sub = sub.droplevel(0).sort_index()  # index: week_number
+        sub = sub.droplevel(0).sort_index()
 
         wmin, wmax = int(sub.index.min()), int(sub.index.max())
         full_weeks = pd.Index(range(wmin, wmax + 1), name="week_number")
 
-        dense = sub.reindex(full_weeks)  # introduces NaNs for gap weeks
+        dense = sub.reindex(full_weeks)  # NaNs appear on gaps
 
-        # Observed mask BEFORE ffill: observed if avg or inv not NaN that week (per domain)
-        obs = (~dense[avg_cols].isna()) | (~dense[inv_cols].isna())   # [T,K] bool
-        dense[obs_cols] = obs.astype(np.float32)
+        # --- observed mask BEFORE ffill ---
+        avg_present = ~dense[avg_cols].isna()          # columns: *_avg
+        inv_present = ~dense[inv_cols].isna()          # columns: *_inv
+        inv_present.columns = avg_cols                 # rename to align per-domain
+        obs = (avg_present | inv_present).astype(np.float32)  # columns: *_avg
 
-        # Fill gaps: freq=0
+        dense[obs_cols] = obs.to_numpy(np.float32)
+
+        # gaps => freq=0
         dense[freq_cols] = dense[freq_cols].fillna(0.0)
 
-        # Forward-fill scores (stable through gaps)
-        dense[avg_cols] = dense[avg_cols].ffill()
-        dense[inv_cols] = dense[inv_cols].ffill()
-
-        # Leading NaNs (before first observation) -> 0, and obs already 0 there
-        dense[avg_cols] = dense[avg_cols].fillna(0.0)
-        dense[inv_cols] = dense[inv_cols].fillna(0.0)
+        # forward-fill scores through gaps
+        dense[avg_cols] = dense[avg_cols].ffill().fillna(0.0)
+        dense[inv_cols] = dense[inv_cols].ffill().fillna(0.0)
 
         dense["patient_id"] = pid
         dense = dense.reset_index().set_index(["patient_id", "week_number"])
         out_parts.append(dense)
 
-    out = pd.concat(out_parts, axis=0).sort_index()
-    return out
+    return pd.concat(out_parts, axis=0).sort_index()
 
 def filter_users_by_usage(
     weekly_df: pd.DataFrame,
