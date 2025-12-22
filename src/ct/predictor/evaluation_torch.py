@@ -1,8 +1,7 @@
 import torch
 
-from ct.training.model_torch import Predictor
 from torch.utils.data import DataLoader
-from ct.training.training_torch import MAE
+from ct.predictor.contracts import Predictor
 
 """
 src/training/evaluation_torch.py
