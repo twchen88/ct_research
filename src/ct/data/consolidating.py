@@ -228,15 +228,15 @@ class HistoryEncoder:
         self.raw_data = raw_data.copy()
 
     def consolidate(self, df: pd.DataFrame) -> pd.DataFrame:
-        needed = ["patient_id", "domain_ids", "domain_scores", "start_time_min"]
+        needed = ["patient_id", "domain_ids", "domain_scores", "start_time"]
         base = df.loc[:, [c for c in needed if c in df.columns]].copy()
 
         missing = [c for c in needed if c not in base.columns]
         if missing:
             raise ValueError(f"Missing required columns: {missing}")
 
-        # Parse timestamps (your start_time_min is datetime-like strings)
-        base["start_ts"] = pd.to_datetime(base["start_time_min"], utc=True, errors="coerce")
+        # Parse timestamps (your start_time is datetime-like strings)
+        base["start_ts"] = pd.to_datetime(base["start_time"], utc=True, errors="coerce")
         base = base.dropna(subset=["start_ts"])
 
         # Normalize lists
