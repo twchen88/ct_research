@@ -91,8 +91,3 @@ def filter_users_by_usage(
 
     filtered = df.loc[df.index.get_level_values(0).isin(keep_users)].copy()
     return filtered
-
-
-# --- Example usage ---
-# weekly_df = HistoryEncoder(raw_data).transform()
-# filtered = filter_users_by_usage(weekly_df, min_sessions_per_week=2, min_weeks=6, require_consecutive=True)
