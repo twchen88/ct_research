@@ -25,7 +25,7 @@ class Predictor(ABC):
                  data_df: pd.DataFrame,
                  cao_mapping: Dict[str, List[str]],
                  data_split: Dict[str, float],
-                 model_params: Dict[str, Any] = dict(),
+                 model_params: List[Dict[str, Any]] = [dict()],
                  metadata: Dict[str, Any] = dict()):
         """
         Initializes a predictor, its parameters, and the metadata.
