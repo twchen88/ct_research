@@ -1,3 +1,4 @@
+import re
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -95,3 +96,77 @@ def plot_random_user_weekly_global(meta, Y, M_target, min_weeks=4):
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
+
+
+def plot_random_patient_domain_avg(
+    df: pd.DataFrame,
+    patient_key: str = "patient_id",   # can be a column or an index level name
+    week_key: str = "week_number",     # can be a column or an index level name
+    seed: int | None = None,
+):
+    """
+    Choose a random patient and plot, by week, the per-week mean of domain_{i}_avg
+    values, excluding domain i for a row iff (domain_{i}_avg==0 and domain_{i}_inv==0).
+
+    Works when patient_key/week_key are columns OR index levels (including MultiIndex).
+    Returns (patient_id, weekly_df).
+    """
+    d0 = df.copy()
+
+    # --- Ensure patient/week are columns (handle MultiIndex / index levels) ---
+    need_reset = False
+    for key in (patient_key, week_key):
+        if key not in d0.columns:
+            if (d0.index.name == key) or (hasattr(d0.index, "names") and key in d0.index.names):
+                need_reset = True
+            else:
+                raise KeyError(f"'{key}' not found as a column or index level.")
+    if need_reset:
+        d0 = d0.reset_index()
+
+    # --- Find domain avg/inv pairs ---
+    avg_cols = [c for c in d0.columns if re.fullmatch(r"domain_\d+_avg", str(c))]
+    if not avg_cols:
+        raise ValueError("No columns matching 'domain_{i}_avg' found.")
+
+    pairs = []
+    for avg in avg_cols:
+        inv = re.sub(r"_avg$", "_inv", avg)
+        if inv not in d0.columns:
+            raise ValueError(f"Missing matching inv column for {avg} (expected {inv}).")
+        pairs.append((avg, inv))
+
+    # --- Choose random patient ---
+    rng = np.random.default_rng(seed)
+    patients = d0[patient_key].dropna().unique()
+    if len(patients) == 0:
+        raise ValueError("No patients found.")
+    pid = rng.choice(patients)
+
+    d = d0.loc[d0[patient_key] == pid].copy()
+
+    # --- Compute per-row mean across included domains ---
+    included_vals = []
+    for avg, inv in pairs:
+        include = ~((d[avg] == 0) & (d[inv] == 0))
+        included_vals.append(d[avg].where(include, np.nan))
+
+    d["domain_avg_mean"] = pd.concat(included_vals, axis=1).mean(axis=1, skipna=True)
+
+    # --- Aggregate by week and plot ---
+    weekly = (
+        d.groupby(week_key, as_index=False)["domain_avg_mean"]
+         .mean()
+         .sort_values(week_key)
+         .dropna(subset=["domain_avg_mean"])
+    )
+
+    plt.figure()
+    plt.plot(weekly[week_key], weekly["domain_avg_mean"], marker="o")
+    plt.title(f"Patient {pid}: mean(domain_i_avg) by week (excluding avg=inv=0)")
+    plt.xlabel(week_key)
+    plt.ylabel("Mean of included domain avg values")
+    plt.grid(True)
+    plt.show()
+
+    return pid, weekly
