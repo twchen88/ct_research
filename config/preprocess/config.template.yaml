@@ -1,0 +1,14 @@
+### v2 config template for preprocessing data
+schema_version: 2
+source:
+  directory: "data/raw/" # Source directory for the input file
+  filename: ""
+destination:
+  directory: "data/processed/" # Destination directory for the output file
+  filename: "" # File name with naming scheme (processed_[YYYYMMDD].csv)
+filter_params:
+  max_gap_weeks: # Maximum allowed gap in weeks for forward-filling scores
+  lookback_weeks: # Number of weeks to look back (filters for how long a patient has been active/how much score history we have for a patient)
+  min_active_weeks: # Minimum number of active weeks required for a patient (filters for usage frequency in conjunction with lookback weeks and maximum gap weeks)
+data_dims:
+  n_domains: # Number of domains in the data
