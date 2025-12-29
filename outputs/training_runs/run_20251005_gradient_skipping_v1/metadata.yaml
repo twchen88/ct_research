@@ -1,8 +1,0 @@
-time_stamp: '2025-10-05T23:18:21.796700'
-run_desc: Use custom masked_mse (only non-missing pairs backprop)
-git_commit_hash: a6d9695d8c9187f9a93edd8346484b72a9c21126
-input_path: data/encoded/predictor_encoded_20250613.npy
-output_path: outputs/training_runs/run_20251005_gradient_skipping_v1
-config_path: outputs/training_runs/run_20251005_gradient_skipping_v1/config.yaml
-metrics_path: outputs/training_runs/run_20251005_gradient_skipping_v1/results.npz
-plots_path: outputs/training_runs/run_20251005_gradient_skipping_v1/loss_curve.png
