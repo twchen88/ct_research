@@ -1,9 +1,0 @@
-### Purpose: Run aggavg with percentile scores from v2 training run.
-settings:
-  device: "cpu"
-  seed: 42
-data:
-  data_source: "outputs/training_runs/run_20250826_percentile_v2/results.npz"
-  model_source: "outputs/training_runs/run_20250826_percentile_v2/model.pt"
-  destination_base: "outputs/aggavg/"
-schema_version: 1

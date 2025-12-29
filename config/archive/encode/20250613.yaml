@@ -1,5 +1,0 @@
-### Purpose: Test encoding pipeline for predictor data, after debugging encoding.py, ensure that target value encoding is working correctly
-
-source_path: "data/preprocessed/predictor_preprocessed_20250609.csv"
-target_path: "data/encoded/predictor_encoded_20250613.npy"
-schema_version: 1

@@ -1,5 +1,0 @@
-### Purpose: After implementing percentile conversion in the preprocessing step, this configuration file is used to encode the preprocessed predictor data.
-
-source_path: "data/preprocessed/predictor_preprocessed_20250826.csv"
-target_path: "data/encoded/predictor_encoded_20250826.npy"
-schema_version: 1

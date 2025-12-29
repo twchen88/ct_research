@@ -1,9 +1,0 @@
-### Purpose: Debug config file for 02 notebook and 04 script
-settings:
-  device: "cpu"
-  seed: 42
-data:
-  data_source: "outputs/training_runs/run_20250623_approximate_test_v3/results.npz"
-  model_source: "outputs/training_runs/run_20250623_approximate_test_v3/model.pt"
-  destination_base: "outputs/aggavg/"
-schema_version: 1

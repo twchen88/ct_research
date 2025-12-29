@@ -1,1 +1,0 @@
-This directory is used for debugging configs that don't need to be tracked as they use old data or will be rerun with the excact same configuration later.
