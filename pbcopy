@@ -1,0 +1,65 @@
+.
+├── 00_pull_data.py
+├── 01_preprocess_data.py
+├── 02_encode_data.py
+├── 03_train_predictor.py
+├── 04_aggregate_average.py
+├── 05_simulate_trajectory.py
+├── CHANGELOG.md
+├── checkpoints
+│   └── best.pt
+├── config
+│   ├── archive
+│   ├── connection
+│   ├── run
+│   └── stages
+├── data
+│   ├── encoded
+│   ├── preprocessed
+│   └── raw
+├── environment.yml
+├── notebooks
+│   ├── 00_data_pull_visuals.ipynb
+│   ├── 01_data_preprocess_visuals.ipynb
+│   ├── 02_aggregate_average_debug.ipynb
+│   ├── 03_data_percentile_visuals.ipynb
+│   ├── 04_percentile_debug.ipynb
+│   ├── 05_gradient_skipping_playground.ipynb
+│   ├── 06_esp_pipeline.ipynb
+│   └── 07_test_new_data_preprocessing.ipynb
+├── old_data
+│   ├── model.pt
+│   ├── next_step_data.csv
+│   ├── next_step_test_data_encoded.meta.yaml
+│   ├── next_step_test_data_encoded.npy
+│   ├── next_step_test_data.csv
+│   └── README.md
+├── outputs
+│   ├── aggavg
+│   ├── training_runs
+│   └── trajectory
+├── pbcopy
+├── provenance_log.md
+├── pyproject.toml
+├── README.md
+├── reference
+│   └── project_Constant_Therapy_ESP_Toy_Project_experiment_run_for_notebook_and_others_run_4522_notebook.ipynb
+├── sandbox
+│   ├── esp-toy
+│   ├── git_commit_hash.txt
+│   ├── logs
+│   ├── play_with_git.py
+│   ├── play_with_logger.py
+│   ├── titanic_esp_example
+│   └── trajectory_showcase
+├── sql
+│   ├── predictor_data_query_20250529.sql
+│   └── valid_users_20251117.sql
+├── src
+│   ├── ct
+│   └── ct.egg-info
+└── tests
+    ├── integration
+    └── unit
+
+30 directories, 33 files
