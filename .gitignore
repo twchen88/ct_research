@@ -62,7 +62,7 @@ config/connection/
 # ------------------------------------------------------------
 wandb/
 outputs/
-legacy_data/
+legacy/
 data/
 *.joblib
 
