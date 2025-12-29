@@ -62,9 +62,8 @@ config/connection/
 # ------------------------------------------------------------
 wandb/
 outputs/
+legacy_data/
 data/
-!src/ct/data/
-old_data/
 *.joblib
 
 # If you keep small sample data under data/, whitelist files like:
