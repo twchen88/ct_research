@@ -1,7 +1,5 @@
 import pandas as pd
 import numpy as np
-from typing import Optional
-
 
 def _ensure_history_index(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -14,9 +12,6 @@ def _ensure_history_index(df: pd.DataFrame) -> pd.DataFrame:
     else:
         raise ValueError("Expected MultiIndex (patient_id, week_number) or columns patient_id, week_number.")
     return out.sort_index()
-
-import numpy as np
-import pandas as pd
 
 def densify_week_grid_ffill_scores(
     df: pd.DataFrame,
