@@ -357,7 +357,7 @@ class HistoryEncoder:
         out = week_ts.join(avg_wide, how="left").join(inv_wide, how="left")
         return out
 
-    def transform(self) -> pd.DataFrame:
+    def transform(self, performance_agg_method: str = "mean") -> pd.DataFrame:
         long_df = self.consolidate(self.raw_data)
 
         all_weeks = _make_all_weeks(long_df)
@@ -366,8 +366,13 @@ class HistoryEncoder:
         freq_df_observed = self.encode_domains(long_df)
         freq_df = _align_freq_to_all_weeks(freq_df_observed, all_weeks)
 
-        # Performance: average within week, then carry forward across weeks
-        avg_long = _avg_domain_score_per_week(long_df)
+        # Performance: consolidate weekly performance metric according to method (default to "mean" average within week), then carry forward across weeks
+        if performance_agg_method == "mean":
+            avg_long = _avg_domain_score_per_week(long_df)
+        elif performance_agg_method == "latest":
+            avg_long = _latest_domain_score_per_week(long_df)
+        else:
+            raise ValueError(f"Unknown performance_agg_method: {performance_agg_method}")
         perf_hist_df = _forward_fill_history(avg_long, all_weeks)
 
         out = freq_df.drop(columns=["week_start_ts"], errors="ignore").join(perf_hist_df, how="outer")
