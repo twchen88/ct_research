@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import ast
-from dataclasses import dataclass
-from typing import Any, Iterable, List, Optional, Tuple
-
 import numpy as np
 import pandas as pd
+from typing import Any, List
 
 """
 src/ct/data/history.py
@@ -121,14 +119,18 @@ def _forward_fill_history(avg_long: pd.DataFrame, all_weeks: pd.DataFrame) -> pd
 
     # forward-fill last known weekly score
     grid["score_ffill"] = grid.groupby(["patient_id", "domain_id"], sort=False)["week_score"].ffill()
-    # grid["score_ffill"] = grid["score_ffill"].fillna(0.0)
+
+    # Typed-safe replacement for aggfunc="last"
+    def _last(s: pd.Series) -> float:
+        # pivot_table passes a Series for each group
+        return s.iloc[-1]
+
 
     avg_wide = grid.pivot_table(
         index=["patient_id", "week_number"],
         columns="domain_id",
         values="score_ffill",
-        aggfunc="last",
-        # fill_value=0.0,
+        aggfunc=_last
     ).sort_index(axis=1)
 
     inv_wide = 1.0 - avg_wide
@@ -176,7 +178,6 @@ def _make_all_weeks(long_df: pd.DataFrame) -> pd.DataFrame:
 
     return all_weeks.sort_values(["patient_id", "week_number"]).reset_index(drop=True)
 
-import pandas as pd
 
 def _align_freq_to_all_weeks(freq_df: pd.DataFrame, all_weeks: pd.DataFrame) -> pd.DataFrame:
     """
@@ -259,7 +260,7 @@ class HistoryEncoder:
         # Per-user relative week_number
         base = base.sort_values(["patient_id", "start_ts"])
         first_ts = base.groupby("patient_id", sort=False)["start_ts"].transform("min")
-        delta_days = (base["start_ts"] - first_ts).dt.total_seconds() / (24 * 3600)
+        delta_days = (base["start_ts"] - first_ts) / pd.Timedelta(days=1)
         base["week_number"] = np.floor(delta_days / 7.0).astype(int)
         base["week_start_ts"] = first_ts + pd.to_timedelta(base["week_number"] * 7, unit="D")
 
