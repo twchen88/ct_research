@@ -62,8 +62,8 @@ config/connection/
 # ------------------------------------------------------------
 wandb/
 outputs/
-legacy/
 data/
+artifacts/
 *.joblib
 
 # If you keep small sample data under data/, whitelist files like:
@@ -95,3 +95,8 @@ src/ct.egg-info/
 sandbox/git_commit_hash.txt
 sandbox/*.tmp
 sandbox/**/*_real.csv
+
+# ------------------------------------------------------------
+# Misc (anything else I want to ignore)
+# ------------------------------------------------------------
+legacy/
