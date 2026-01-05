@@ -13,10 +13,11 @@ from typing import Iterator
 
 import ct.utils.config_io as config_io
 
-
+from ct.utils.logger import get_logger
+logger = get_logger(__name__)
 
 @contextmanager
-def _connect_engine(filename: str) -> Iterator[Engine]:
+def connect_engine(filename: str) -> Iterator[Engine]:
     """
     Open an SSH tunnel and yield a SQLAlchemy Engine suitable for pandas.read_sql.
     Closes the tunnel automatically when the context exits.
@@ -25,7 +26,7 @@ def _connect_engine(filename: str) -> Iterator[Engine]:
         filename (str): Path to the JSON configuration file containing connection details.
     """
     cfg = config_io.load_json_config(filename)
-    print("Connecting to database (via SQLAlchemy)...")
+    logger.info(f"Establishing SSH tunnel to {cfg['ssh_address_or_host']}...")
 
     server = SSHTunnelForwarder(
         ssh_address=(cfg["ssh_address_or_host"], 22),
@@ -47,12 +48,12 @@ def _connect_engine(filename: str) -> Iterator[Engine]:
             url,
             pool_pre_ping=True,   # helps recover dropped connections
         )
-        print("Connection successful (engine ready).")
+        logger.info("SSH tunnel established and database engine created.")
         yield engine
     finally:
         server.stop()
 
-def _load_sql(query: str, con: Engine) -> pd.DataFrame:
+def load_sql(query: str, con: Engine) -> pd.DataFrame:
     """
     Takes in a string of query or an SQL file and connection object, returns a dataframe with read results.
     
@@ -64,8 +65,10 @@ def _load_sql(query: str, con: Engine) -> pd.DataFrame:
     """
     # if query string is not an SQL file, run the query directly
     if query[-4:] != ".sql":
+        logger.info("Running SQL query directly.")
         return pd.read_sql(query, con)
     else:
         # if query string is an SQL file, read the file and run the query
         with open(query, "r") as f:
+            logger.info(f"Loading SQL query from file: {query}")
             return pd.read_sql(f.read(), con)
