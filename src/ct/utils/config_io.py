@@ -33,6 +33,12 @@ def load_yaml_config(filename: str):
     with open(filename, "r") as f:
         logger.info(f"Loading YAML config from {filename}")
         config = yaml.safe_load(f)
+
+    # check config version
+    if config.get("schema_version") == 1:
+    # either migrate or error cleanly
+        raise ValueError("Config schema_version=1 is no longer supported; please migrate to v2.")
+    
     return config
 
 # Functions for saving configuration files in JSON and YAML formats
