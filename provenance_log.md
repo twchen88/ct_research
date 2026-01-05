@@ -1,8 +1,6 @@
 # Provenance Log for Version 2
 
-This file documents the origin, purpose, and status of source code, notebooks, and datasets that has been refactored from version 1. This version contains all the code from completed section of proposal.
-
-If dates are included in file names, it must be the date when the file is USED (when data is stored, processed, modified, etc), not when the config file is created.
+This file documents the origin, purpose, and status of source code, notebooks, and datasets.
 
 ---
 ## top-level files
@@ -11,6 +9,8 @@ If dates are included in file names, it must be the date when the file is USED (
 - `provenance_log.md`
 - `pyproject.toml`
 - `README.md`
+
+## artifacts/
 
 ## configs/
 
@@ -26,6 +26,7 @@ Purpose: store database information, credentials, and SSH key (gitignore due to 
 Notes: CSV files should be saved without index column
 
 ## legacy/ (.gitignored)
+- Legacy configs, outputs, scripts, and code from v1. Should be left till v2 refactoring is done, and documenting zip file has been created.
 
 ## notebooks/
 Numbered by create date.
@@ -40,7 +41,6 @@ Numbered by create date.
 
 ## sql/
 - `predictor_data_query_*.sql`: preliminary data query with basic filtering information, created based on Claire Cordella's queries. Date in MMDDYY.
-
 
 
 ## src/ct/
