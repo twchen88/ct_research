@@ -19,3 +19,6 @@ where = ["src"]
 [tool.pytest.ini_options]
 addopts = "-q -ra"
 testpaths = ["tests"]
+
+[project.scripts]
+ct = "ct.cli:main"
