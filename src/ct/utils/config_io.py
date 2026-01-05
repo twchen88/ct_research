@@ -1,15 +1,13 @@
-### Functions for config files: loading, saving, and updatings
-import json
-import yaml
-from ct.utils.logger import get_logger
-
 """
-src/utils/config_io.py
+ct.utils.config_io
 --------------------------------
 Functions for loading and saving files in JSON and YAML formats. It's named config_io because all JSON/YAML files
 in this project are used for configuration or metadata purposes.
 """
+import json
+import yaml
 
+from ct.utils.logger import get_logger
 logger = get_logger(__name__)
 
 # takes in a string of the file name, returns a dictionary with the contents of the file
