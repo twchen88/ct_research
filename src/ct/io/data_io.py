@@ -14,17 +14,6 @@ It is separated into two main sections: write functions and read functions.
 
 
 ## Write functions
-def write_sessions_to_csv(file_name: str, df: pd.DataFrame) -> None:
-    """
-    Writes a DataFrame to a CSV file. Used in script 00 and 01 when saving to CSV.
-    Parameters:
-        file_name (str): The name of the file to write to.
-        df (pd.DataFrame): The DataFrame to write.
-    """
-    df.to_csv(file_name, index=False)
-    print(f"Dataframe written to {file_name}")
-
-
 def write_sessions_to_npy(file_name: str, data: np.ndarray) -> None:
     """
     Writes a numpy array to a .npy file. Used in script 02 when saving to numpy format.
