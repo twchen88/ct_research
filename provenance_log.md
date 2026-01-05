@@ -21,6 +21,8 @@ Purpose: store database information, credentials, and SSH key (gitignored due to
 
 ### stages/
 
+### templates/
+- `raw.yaml`: Config template for pulling raw data. Used for either scripts/pull_raw.py or in the pipeline.
 
 ## data/
 Notes: CSV files should be saved without index column
@@ -29,9 +31,10 @@ Notes: CSV files should be saved without index column
 - Legacy configs, outputs, scripts, and code from v1. Should be left till v2 refactoring is done, and documenting zip file has been created.
 
 ## notebooks/
-Numbered by create date.
+
 
 ## reference/
+- `project_Constant_Therapy_ESP_Toy_Project_experiment_run_for_notebook_and_others_run_4522_notebook.ipynb`: reference for a simple ESP run that is template for the actual Constant Therapy data
 
 ## runs/
 
@@ -61,6 +64,11 @@ Numbered by create date.
 - `trajectory.py`: 
 
 ### io/
+Data IO functions as well as 
+- `data_io.py`
+- `db_utils.py`
+- `pull_raw.py`
+- `snapshots.py`
 
 ### pipeline/
 
