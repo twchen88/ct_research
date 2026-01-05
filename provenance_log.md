@@ -15,7 +15,7 @@ This file documents the origin, purpose, and status of source code, notebooks, a
 ## configs/
 
 ### connection/
-Purpose: store database information, credentials, and SSH key (gitignore due to sensitive information)
+Purpose: store database information, credentials, and SSH key (gitignored due to sensitive information)
 
 ### run/
 
@@ -25,7 +25,7 @@ Purpose: store database information, credentials, and SSH key (gitignore due to 
 ## data/
 Notes: CSV files should be saved without index column
 
-## legacy/ (.gitignored)
+## legacy/ (gitignored)
 - Legacy configs, outputs, scripts, and code from v1. Should be left till v2 refactoring is done, and documenting zip file has been created.
 
 ## notebooks/
