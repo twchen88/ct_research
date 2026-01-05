@@ -8,6 +8,6 @@ except PackageNotFoundError:
     __version__ = "0.0.0"
 
 # Optional: expose subpackages at the top level
-from . import data, experiments, predictor, utils, viz
+from . import datasets, experiments, predictor, utils, viz, config, pipeline, io
 
-__all__ = ["data", "experiments", "predictor", "utils", "viz"]
+__all__ = ["datasets", "experiments", "predictor", "utils", "viz", "config", "pipeline", "io"]
