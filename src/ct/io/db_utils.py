@@ -1,4 +1,9 @@
-import pymysql
+"""
+ct.io.db_utils
+-----------------
+This module contains functions that help with connecting to the database and running SQL queries.
+"""
+
 import pandas as pd
 from contextlib import contextmanager
 from urllib.parse import quote_plus
@@ -8,17 +13,10 @@ from typing import Iterator
 
 import ct.utils.config_io as config_io
 
-"""
-src/data/dat_io.py
------------------
-This module contains functions that help with connecting to the database and running SQL queries.
-* connect: load connection configuration and connects to the SQL database using SSH tunneling.
-* load_sql: load and run a SQL query from sql/*.sql file and returns a pandas DataFrame.
-* save_metadata: save metadata about the output file and configuration used to generate it when running a query.
-"""
+
 
 @contextmanager
-def connect_engine(filename: str) -> Iterator[Engine]:
+def _connect_engine(filename: str) -> Iterator[Engine]:
     """
     Open an SSH tunnel and yield a SQLAlchemy Engine suitable for pandas.read_sql.
     Closes the tunnel automatically when the context exits.
@@ -54,7 +52,7 @@ def connect_engine(filename: str) -> Iterator[Engine]:
     finally:
         server.stop()
 
-def load_sql(query: str, con: Engine) -> pd.DataFrame:
+def _load_sql(query: str, con: Engine) -> pd.DataFrame:
     """
     Takes in a string of query or an SQL file and connection object, returns a dataframe with read results.
     
