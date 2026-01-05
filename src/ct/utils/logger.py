@@ -12,6 +12,7 @@ This module provides a utility function to create and configure loggers.
 def configure_logging(
     log_file: str,
     level: int = logging.INFO,
+    force: bool = False
 ) -> None:
     """
     Configure root logger with a stream handler (console)
@@ -21,8 +22,10 @@ def configure_logging(
     root = logging.getLogger()
 
     # If handlers already exist, don't reconfigure
-    if root.hasHandlers():
+    if root.hasHandlers() and not force:
         return
+    if force:
+        root.handlers.clear()
 
     root.setLevel(level)
 
