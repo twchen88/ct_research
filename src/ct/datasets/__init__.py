@@ -2,6 +2,6 @@
 Data loading, preprocessing, and encoding utilities.
 """
 
-from . import data_io, db_utils, encoding, preprocessing
+from . import consolidating, encoding, filtering, preprocessing
 
-__all__ = ["data_io", "db_utils", "encoding", "preprocessing"]
+__all__ = ["consolidating", "encoding", "filtering", "preprocessing"]
