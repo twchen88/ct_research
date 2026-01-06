@@ -19,6 +19,9 @@ where = ["src"]
 [tool.pytest.ini_options]
 addopts = "-q -ra"
 testpaths = ["tests"]
+markers = [
+  "integration: integration tests (may be slower, uses multiple modules)",
+]
 
 [project.scripts]
 ct = "ct.cli:main"
