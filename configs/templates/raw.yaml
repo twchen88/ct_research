@@ -1,0 +1,21 @@
+metadata:
+  schema_version: 2
+  name: human readable name for pull_raw configuration
+  notes: Configuration template for pulling raw data from SQL database and saving as CSV snapshot.
+
+logging:
+  level: INFO
+
+snapshot:
+  prefix: raw
+  update_latest: boolean_flag_to_update_latest_snapshot
+
+source:
+  kind: sql
+  sql_params: /path/to/sql_database_config.json
+  sql_file_path: /path/to/query.sql
+
+output:
+  snapshot_root: data/snapshots/
+  filename: raw_data.csv
+  format: csv
