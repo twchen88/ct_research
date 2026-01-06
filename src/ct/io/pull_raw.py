@@ -7,7 +7,7 @@ Defines public entrypoint and helper functions that pull raw data from external 
 import pandas as pd
 from pathlib import Path
 from ct.io.db_utils import connect_engine, load_sql
-from ct.io.snapshots import write_snapshot_metadata, get_snapshot_id_from_path
+from ct.io.snapshots import write_snapshot_metadata
 
 from ct.utils.logger import get_logger
 logger = get_logger(__name__)
