@@ -2,6 +2,6 @@
 Shared utilities: logging, config helpers, metadata, reproducibility.
 """
 
-from . import config_io, logger, metadata, reproducibility
+from . import cao_mapping, config_io, hasing, logger, metadata, reproducibility, torch_layer_map
 
-__all__ = ["config_io", "logger", "metadata", "reproducibility"]
+__all__ = ["cao_mapping", "config_io", "hasing", "logger", "metadata", "reproducibility", "torch_layer_map"]
