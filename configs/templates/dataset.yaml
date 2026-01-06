@@ -1,14 +1,56 @@
-### v2 config template for preprocessing data
-schema_version: 2
-source:
-  directory: "data/raw/" # Source directory for the input file
-  filename: ""
-destination:
-  directory: "data/processed/" # Destination directory for the output file
-  filename: "" # File name with naming scheme (processed_[YYYYMMDD].csv)
-filter_params:
-  max_gap_weeks: # Maximum allowed gap in weeks for forward-filling scores
-  lookback_weeks: # Number of weeks to look back (filters for how long a patient has been active/how much score history we have for a patient)
-  min_active_weeks: # Minimum number of active weeks required for a patient (filters for usage frequency in conjunction with lookback weeks and maximum gap weeks)
-data_dims:
-  n_domains: # Number of domains in the data
+metadata:
+  schema_version: 2
+  name: "Dataset Configuration Template"
+  notes: "Template configuration file for dataset processing."
+
+logging:
+  level: INFO
+
+input:
+  filename: "raw_data.csv" # Input file name, expected to be in the raw data snapshot directory, should be constant
+
+input_schema:
+  id_col: patient_id
+  time_col: start_time
+  paired_lists:
+    - category_col: domain_ids
+      category_dtype: "int32"
+      value_col: domain_scores
+      value_dtype: "float32"
+      sep: ","
+
+history: # first step, building patient history
+  aggregate_window: "1W" # Time window for aggregating scores (e.g., daily, weekly, monthly)
+  time_bin_col: step_index # Column representing time bins
+  step_index_base: 0   # 0|1
+  time_bin_alignment: "floor"        # floor|period_start|period_end
+  time_index_mode: "per_patient" # per_patient|global, method for calculating and numbering time bins
+  aggregation_method: "latest" # average|max|latest, method for aggregating scores
+  forward_fill: true # Whether to enable forward filling, default to true
+  frequency_calculation: "count" # count|percent, method for calculating frequency
+  missing_encoding: "00" # 00|mean|zero, strategy for handling missing data, default to 00
+
+filtering: # second step, filtering patients based on history
+  max_gap_windows: 8 # Maximum allowed gap in aggregation window units for forward-filling scores
+  min_history_windows: 12 # Number of aggregation window units to look back (filters for how long a patient has been active/how much score history we have for a patient)
+  min_active_windows: 8 # Minimum number of active aggregation window units required for a patient (filters for usage frequency)
+
+featurization: # third step, encoding patient features, produces model-ready dataset
+  scaling_method: "standard" # standard|minmax|none|percentile, method for scaling features
+  scaling_scope: "global"   # global | per_patient
+  
+output_schema:
+  storage:
+    index_representation: columns   # columns | multiindex
+  id_col: patient_id
+  time_col: step_index
+  features:
+    selection: by_prefix
+    prefixes: ["score_domain_", "freq_domain_", "inv_domain_"] # score, frequency, inverse score
+  masks:
+    selection: by_prefix
+    prefixes: ["obs_domain_"] # if 1, the domain was observed in that time bin rather than forward-filled
+
+output:
+  format: "parquet" # Output file format (e.g., csv, parquet)
+  filename: "dataset.parquet" # Output file name
