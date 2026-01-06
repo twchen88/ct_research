@@ -52,10 +52,7 @@ Notes: CSV files should be saved without index column
 ### config/
 
 ### datasets/
-- `db_utils.py`: contains functions that connects to SQL database and runs SQL queries as well as saving metadata related to database access
-- `data_io.py`: contains functions that loads and writes session data in CSV format
-- `preprocessing.py`: contains functions that filters and reformat the dataset so that it is suitable for training
-- `encoding.py`: contains functions that create missing indicators and encode target vectors
+
 
 ### experiments/
 - `aggregate_average.py`: contains functions that are specific to aggregate average experiments
@@ -89,3 +86,5 @@ Data IO functions as well as
 - `trajectory.py`: 
 
 ## tests/
+- `unit/`
+- `integration/`
