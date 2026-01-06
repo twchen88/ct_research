@@ -1,9 +1,0 @@
-### v2 config template for pulling data from SQL database
-schema_version: 2
-source:
-  type: database
-  sql_file_path:  # Path to the SQL file to execute
-  sql_params: config/connection/constant_therapy_config.json   # Path to the JSON file with database connection parameters
-output:
-  dest: "data/raw"         # Destination directory for the output file
-  filename:      # Name of the output file (descriptive_[YYYYMMDD].csv)
