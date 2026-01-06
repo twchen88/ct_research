@@ -20,6 +20,8 @@ Purpose: store database information, credentials, and SSH key (gitignored due to
 ### run/
 
 ### stages/
+#### pull/
+- `test.yaml`: Config for testing purposes.
 
 ### templates/
 - `raw.yaml`: Config template for pulling raw data. Used for either scripts/pull_raw.py or in the pipeline.
