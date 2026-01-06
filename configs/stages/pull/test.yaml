@@ -1,0 +1,20 @@
+metadata:
+  schema_version: 2
+  name: test_pull
+
+logging:
+  level: INFO
+
+snapshot:
+  prefix: test
+  update_latest: false
+
+source:
+  kind: sql
+  sql_params: test_sql.json
+  sql_file_path: sql/fake_query.sql
+
+output:
+  snapshot_root: /tmp/snapshots
+  filename: test.csv
+  format: csv
