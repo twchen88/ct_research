@@ -25,7 +25,7 @@ history: # first step, building patient history
   step_index_base: 0   # 0|1
   time_bin_alignment: "floor"        # floor|period_start|period_end
   time_index_mode: "per_patient" # per_patient|global, method for calculating and numbering time bins
-  aggregation_method: "latest" # average|max|latest, method for aggregating scores
+  aggregation_method: "average" # average|max|latest, method for aggregating scores
   forward_fill: true # Whether to enable forward filling, default to true
   frequency_calculation: "count" # count|percent, method for calculating frequency
   missing_encoding: "00" # 00|mean|zero, strategy for handling missing data, default to 00
