@@ -21,7 +21,7 @@ input_schema:
 
 history: # first step, building patient history
   aggregate_window: "1W" # Time window for aggregating scores (e.g., daily, weekly, monthly)
-  time_bin_col: step_index # Column representing time bins
+  time_bin_col: step_index # Column representing time bins (numbered time intervals)
   step_index_base: 0   # 0|1
   time_bin_alignment: "floor"        # floor|period_start|period_end
   time_index_mode: "per_patient" # per_patient|global, method for calculating and numbering time bins
