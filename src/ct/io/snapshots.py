@@ -11,6 +11,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from ct.utils.metadata import get_git_commit_hash
 from ct.utils.hashing import hash_dict
+from ct.utils.io import save_yaml
 
 from ct.utils.logger import get_logger
 logger = get_logger(__name__)
@@ -67,8 +68,7 @@ def write_snapshot_metadata(
     }
 
     meta_path = snapshot_dir / "meta.yaml"
-    with meta_path.open("w") as f:
-        yaml.safe_dump(meta, f, sort_keys=False)
+    save_yaml(meta, meta_path)
 
     logger.info("Snapshot metadata written to %s", meta_path)
     return meta_path

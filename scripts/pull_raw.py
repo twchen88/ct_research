@@ -6,7 +6,7 @@ using a configuration file for database connection details and query information
 """
 
 import argparse
-import ct.utils.config_io as config_io
+import ct.utils.io as io
 from pathlib import Path
 from ct.io.pull_raw import pull_raw
 from ct.io.snapshots import make_snapshot_id, write_latest_snapshot
@@ -18,7 +18,7 @@ def main():
     p.add_argument("--config", required=True)
     args = p.parse_args()
 
-    raw_cfg = config_io.load_yaml_config(args.config)
+    raw_cfg = io.load_yaml(args.config)
     cfg = PullRawConfig.model_validate(raw_cfg)
 
     snapshot_root = Path(cfg.output["snapshot_root"])

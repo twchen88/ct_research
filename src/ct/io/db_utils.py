@@ -11,7 +11,7 @@ from sqlalchemy import create_engine, Engine
 from sshtunnel import SSHTunnelForwarder
 from typing import Iterator
 
-import ct.utils.config_io as config_io
+import ct.utils.io as io
 
 from ct.utils.logger import get_logger
 logger = get_logger(__name__)
@@ -25,7 +25,7 @@ def connect_engine(filename: str) -> Iterator[Engine]:
     Parameters:
         filename (str): Path to the JSON configuration file containing connection details.
     """
-    cfg = config_io.load_json_config(filename)
+    cfg = io.load_json(filename)
     mode = cfg.get("connection_mode")
 
     if mode == "direct":
