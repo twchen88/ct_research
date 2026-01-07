@@ -1,10 +1,14 @@
+"""
+Defines function to load configuration files.
+"""
+
 from pathlib import Path
 from ct.utils.io import load_yaml
 
 from ct.utils.logger import get_logger
 logger = get_logger(__name__)
 
-def load_config(filename: str) -> dict:
+def load_config(filename: str | Path) -> dict:
     config = load_yaml(filename)
     if config.get("schema_version") == 1:
         logger.error("Config schema_version=1 is no longer supported")
