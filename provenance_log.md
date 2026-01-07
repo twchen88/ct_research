@@ -54,6 +54,9 @@ Notes: CSV files should be saved without index column
 ### config/
 
 ### datasets/
+- `featuriation.py`
+- `filtering.py`
+- `history.py`
 
 
 ### experiments/
@@ -65,9 +68,9 @@ Notes: CSV files should be saved without index column
 ### io/
 Data IO functions as well as 
 - `data_io.py`
-- `db_utils.py`
-- `pull_raw.py`
-- `snapshots.py`
+- `db_utils.py`: functions that load SQL queries/files and create connection to external SQL systems
+- `pull_raw.py`: defines public entry point for pulling and saving raw data
+- `snapshots.py`: snapshots-related functions such as creating snapshot ID, metadata, and pointing to latest snapshot
 
 ### pipeline/
 
