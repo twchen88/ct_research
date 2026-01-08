@@ -1,189 +1,278 @@
-import pandas as pd
-import numpy as np
+"""
+ct.datasets.filtering
+---------------------
+Filter + densify time-binned history output (from ct.datasets.history).
 
-def _ensure_history_index(df: pd.DataFrame) -> pd.DataFrame:
+Input:
+  - history_df: DataFrame indexed by (patient_id, step_index) (or with those columns)
+  - filtering config section:
+      max_gap_windows
+      min_history_windows
+      min_active_windows
+      time_bin_col (optional; default "step_index")
+
+Output:
+  - filtered (optionally densified) DataFrame indexed by (patient_id, step_index)
+
+Notes:
+  - This module computes per-domain *_obs indicators BEFORE forward-filling scores
+    so you can filter on true observed activity while still producing dense grids.
+  - Uses ct.datasets.history naming:
+      step_start_ts
+      freq_domain_<id>
+      score_domain_<id>
+      inv_domain_<id>
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Dict, Optional, Tuple, List
+
+import numpy as np
+import pandas as pd
+
+from ct.utils.logger import get_logger
+logger = get_logger(__name__)
+
+
+# -----------------------------
+# Config
+# -----------------------------
+
+@dataclass(frozen=True)
+class FilteringConfig:
+    max_gap_windows: int = 8
+    min_history_windows: int = 12
+    min_active_windows: int = 8
+
+    # code-only knobs (not required in YAML)
+    densify: bool = True
+    keep_obs_cols: bool = True
+
+    # injected by pipeline (not in YAML)
+    time_bin_col: str = "step_index"
+
+
+def _load_filtering_config(filtering_cfg: Optional[Dict[str, Any]]) -> FilteringConfig:
+    filtering_cfg = filtering_cfg or {}
+    return FilteringConfig(**filtering_cfg)
+
+
+# -----------------------------
+# Utilities
+# -----------------------------
+
+def _ensure_history_index(df: pd.DataFrame, time_bin_col: str) -> pd.DataFrame:
     """
-    Ensure df is indexed by (patient_id, week_number) and sorted.
+    Ensure df is indexed by (patient_id, time_bin_col) and sorted.
     """
-    if isinstance(df.index, pd.MultiIndex) and df.index.names[:2] == ["patient_id", "week_number"]:
+    if (
+        isinstance(df.index, pd.MultiIndex)
+        and df.index.names[:2] == ["patient_id", time_bin_col]
+    ):
         out = df.copy()
-    elif {"patient_id", "week_number"}.issubset(df.columns):
-        out = df.set_index(["patient_id", "week_number"]).copy()
+    elif {"patient_id", time_bin_col}.issubset(df.columns):
+        out = df.set_index(["patient_id", time_bin_col]).copy()
     else:
-        raise ValueError("Expected MultiIndex (patient_id, week_number) or columns patient_id, week_number.")
+        logger.error(f"DataFrame index: {df.index.names}, columns: {df.columns.tolist()}")
+        raise ValueError(
+            f"Expected MultiIndex (patient_id, {time_bin_col}) or columns patient_id, {time_bin_col}."
+        )
     return out.sort_index()
 
-def densify_week_grid_ffill_scores(
-    df: pd.DataFrame,
-    freq_cols: list[str],
-    avg_cols: list[str],
-    inv_cols: list[str],
+
+def _infer_history_columns(df: pd.DataFrame) -> Tuple[List[str], List[str], List[str], List[str]]:
+    cols = list(df.columns)
+    freq_cols = [c for c in cols if c.startswith("freq_domain_")]
+    score_cols = [c for c in cols if c.startswith("score_domain_")]
+    inv_cols = [c for c in cols if c.startswith("inv_domain_")]
+    obs_cols = [c for c in cols if c.startswith("obs_domain_")]
+    return freq_cols, score_cols, inv_cols, obs_cols
+
+
+def _compute_domain_obs_from_scores(
+    dense: pd.DataFrame, score_cols: List[str], inv_cols: List[str]
 ) -> pd.DataFrame:
     """
-    Densify each patient to full week grid [min_week..max_week].
-
-    Gap weeks:
-      - freq := 0
-      - avg/inv := forward-filled (stable)
-      - domain_i_obs := 1 if that domain had a real value that week, else 0
+    Compute per-domain observed mask for the current bin BEFORE ffill.
+    Output columns are "obs_domain_<id>" aligned to score_cols.
     """
-    df = _ensure_history_index(df).copy()
+    if not score_cols:
+        logger.warning("No score_domain_ columns found; cannot compute obs_domain_.")
+        return pd.DataFrame(index=dense.index)
 
-    df[freq_cols] = df[freq_cols].astype(float)
-    df[avg_cols]  = df[avg_cols].astype(float)
-    df[inv_cols]  = df[inv_cols].astype(float)
+    # score_domain_123 -> obs_domain_123
+    obs_cols = [c.replace("score_domain_", "obs_domain_") for c in score_cols]
 
-    obs_cols = [c.replace("_avg", "_obs") for c in avg_cols]
-    out_parts = []
+    score_present = ~dense[score_cols].isna()
+    if inv_cols:
+        inv_present = ~dense[inv_cols].isna()
+        inv_present.columns = score_cols  # align domain-wise
+        obs = (score_present | inv_present).astype(np.float32)
+    else:
+        obs = score_present.astype(np.float32)
+
+    return pd.DataFrame(obs.to_numpy(np.float32), index=dense.index, columns=obs_cols)
+
+
+def _max_consecutive_false(mask: np.ndarray) -> int:
+    max_run = 0
+    run = 0
+    for ok in mask:
+        if not ok:
+            run += 1
+            max_run = max(max_run, run)
+        else:
+            run = 0
+    return max_run
+
+
+def _bin_observed_any_domain(
+    sub: pd.DataFrame,
+    *,
+    obs_cols: List[str],
+    freq_cols: List[str],
+) -> np.ndarray:
+    """
+    Bin is observed if any domain is observed.
+    Preference order:
+      1) obs_domain_* columns if present (true observation before ffill)
+      2) sum of freq_domain_* columns > 0
+    """
+    if obs_cols:
+        return (sub[obs_cols].to_numpy(np.float32).sum(axis=1) > 0)
+    if freq_cols:
+        return (sub[freq_cols].to_numpy(np.float32).sum(axis=1) > 0)
+    return np.zeros(len(sub), dtype=bool)
+
+
+# -----------------------------
+# Densify
+# -----------------------------
+
+def densify_bin_grid_ffill_scores(df: pd.DataFrame, time_bin_col: str) -> pd.DataFrame:
+    """
+    Densify each patient to full bin grid [min_bin..max_bin].
+
+    Gap bins:
+      - freq := 0
+      - score/inv := forward-filled (stable)
+      - obs_domain_* := 1 if that domain had a real value that bin, else 0
+        (computed BEFORE forward fill)
+    """
+    df = _ensure_history_index(df, time_bin_col).copy()
+    freq_cols, score_cols, inv_cols, _ = _infer_history_columns(df)
+
+    # ensure float for NaN/ffill behavior
+    if freq_cols:
+        df[freq_cols] = df[freq_cols].astype(float)
+    if score_cols:
+        df[score_cols] = df[score_cols].astype(float)
+    if inv_cols:
+        df[inv_cols] = df[inv_cols].astype(float)
+
+    out_parts: List[pd.DataFrame] = []
 
     for pid, sub in df.groupby(level=0, sort=False):
         sub = sub.droplevel(0).sort_index()
+        if len(sub) == 0:
+            continue
 
-        wmin, wmax = int(sub.index.min()), int(sub.index.max())
-        full_weeks = pd.Index(range(wmin, wmax + 1), name="week_number")
+        bmin, bmax = int(sub.index.min()), int(sub.index.max())
+        full_bins = pd.Index(range(bmin, bmax + 1), name=time_bin_col)
 
-        dense = sub.reindex(full_weeks)  # NaNs appear on gaps
+        dense = sub.reindex(full_bins)  # NaNs on gaps
 
-        # --- observed mask BEFORE ffill ---
-        avg_present = ~dense[avg_cols].isna()          # columns: *_avg
-        inv_present = ~dense[inv_cols].isna()          # columns: *_inv
-        inv_present.columns = avg_cols                 # rename to align per-domain
-        obs = (avg_present | inv_present).astype(np.float32)  # columns: *_avg
-
-        dense[obs_cols] = obs.to_numpy(np.float32)
+        # observed mask BEFORE ffill
+        obs_df = _compute_domain_obs_from_scores(dense, score_cols, inv_cols)
+        if not obs_df.empty:
+            dense = dense.join(obs_df, how="left")
 
         # gaps => freq=0
-        dense[freq_cols] = dense[freq_cols].fillna(0.0)
+        if freq_cols:
+            dense[freq_cols] = dense[freq_cols].fillna(0.0)
 
         # forward-fill scores through gaps
-        dense[avg_cols] = dense[avg_cols].ffill().fillna(0.0)
-        dense[inv_cols] = dense[inv_cols].ffill().fillna(0.0)
+        if score_cols:
+            dense[score_cols] = dense[score_cols].ffill().fillna(0.0)
+        if inv_cols:
+            dense[inv_cols] = dense[inv_cols].ffill().fillna(0.0)
 
         dense["patient_id"] = pid
-        dense = dense.reset_index().set_index(["patient_id", "week_number"])
+        dense = dense.reset_index().set_index(["patient_id", time_bin_col])
         out_parts.append(dense)
 
-    return pd.concat(out_parts, axis=0).sort_index()
+    return pd.concat(out_parts, axis=0).sort_index() if out_parts else df.iloc[0:0].copy()
 
-def filter_users_by_usage(
-    weekly_df: pd.DataFrame,
-    min_sessions_per_week: int = 1,
-    min_weeks: int = 4,
-    freq_cols: list[str] | None = None,
-    require_consecutive: bool = True,
-) -> pd.DataFrame:
+
+# -----------------------------
+# Filtering
+# -----------------------------
+
+def filter_patients_by_config(df: pd.DataFrame, cfg: FilteringConfig) -> pd.DataFrame:
     """
-    Filter HistoryEncoder.transform() output by:
-      1) usage frequency: user must have >= min_sessions_per_week in every qualifying week
-      2) usage time: user must have records for >= min_weeks weeks
-
-    Assumptions:
-      - weekly_df is the wide weekly output: one row per (patient_id, week_number)
-      - session count per week is approximated as sum of domain_*_freq columns
-        (this matches the encoder's definition: freq counts domain occurrences, not necessarily sessions).
-        If you want "sessions" exactly, include a session_id in raw data and encode it separately.
-
-    Params:
-      freq_cols: optionally provide which columns to use as frequency columns.
-                Default: all columns ending in "_freq".
-      require_consecutive:
-        - True (default): checks the criteria over a consecutive block of weeks of length min_weeks,
-          starting at week 0 up to the user's max observed week (missing weeks break the streak).
-        - False: checks criteria over the user's observed weeks only (ignores gaps).
-
-    Returns:
-      Filtered weekly_df containing only users who pass, with original indexing preserved.
+    Apply filtering rules:
+      - min_history_windows: require at least this many bins in dense grid
+      - min_active_windows: require at least this many observed bins (any domain observed)
+      - max_gap_windows: disallow any consecutive gap longer than this (gaps = not observed)
     """
-    df = _ensure_history_index(weekly_df)
+    df = _ensure_history_index(df, cfg.time_bin_col)
+    freq_cols, _, _, obs_cols = _infer_history_columns(df)
 
-    if freq_cols is None:
-        freq_cols = [c for c in df.columns if c.endswith("_freq")]
-    if not freq_cols:
-        raise ValueError("No frequency columns found. Pass freq_cols explicitly.")
+    keep: List[Any] = []
 
-    # total "usage count" per week (see note in docstring)
-    usage_per_week = df[freq_cols].sum(axis=1)
-
-    # Build per-user masks
-    keep_users = []
-
-    for pid, g in usage_per_week.groupby(level=0, sort=False):
-        s = g.droplevel(0).sort_index()  # index = week_number
-
-        if require_consecutive:
-            # Reindex to full consecutive weeks from 0..max_week (missing => 0 usage)
-            full_weeks = pd.RangeIndex(0, int(s.index.max()) + 1 if len(s) else 0)
-            s_full = s.reindex(full_weeks, fill_value=0)
-
-            # Need at least min_weeks overall span
-            if len(s_full) < min_weeks:
-                continue
-
-            # Find any consecutive window of length min_weeks where all weeks meet min_sessions_per_week
-            meets = (s_full >= min_sessions_per_week).astype(int)
-            # rolling sum == window size means all True in that window
-            ok_any_window = (meets.rolling(min_weeks).sum() == min_weeks).any()
-            if not ok_any_window:
-                continue
-
-            keep_users.append(pid)
-
-        else:
-            # Only consider observed weeks (gaps ignored)
-            if len(s) < min_weeks:
-                continue
-            if (s >= min_sessions_per_week).sum() < min_weeks:
-                continue
-            # Optional stricter: require every observed week meets threshold
-            if (s < min_sessions_per_week).any():
-                continue
-
-            keep_users.append(pid)
-
-    filtered = df.loc[df.index.get_level_values(0).isin(keep_users)].copy()
-    return filtered
-
-
-def filter_patients_allow_gaps_with_cap(
-    df: pd.DataFrame,
-    obs_cols: list[str],
-    lookback_weeks: int = 12,
-    min_observed_target_weeks: int = 8,
-    max_gap_weeks: int = 8,
-) -> pd.DataFrame:
-    """
-    Keep patients who:
-      - have at least lookback+1 weeks after densify
-      - have at least min_observed_target_weeks where ANY domain is observed
-      - do not have a consecutive gap run longer than max_gap_weeks
-    """
-    df = _ensure_history_index(df)
-
-    keep = []
     for pid, sub in df.groupby(level=0, sort=False):
         sub = sub.droplevel(0).sort_index()
         T = len(sub)
-        if T < lookback_weeks + 1:
+
+        if T < int(cfg.min_history_windows):
             continue
 
-        # week observed if any domain observed
-        week_obs = (sub[obs_cols].to_numpy(np.float32).sum(axis=1) > 0)  # [T] bool
-        if int(week_obs.sum()) < min_observed_target_weeks:
+        bin_obs = _bin_observed_any_domain(sub, obs_cols=obs_cols, freq_cols=freq_cols)
+
+        if int(bin_obs.sum()) < int(cfg.min_active_windows):
             continue
 
-        # max consecutive gaps
-        gaps = (~week_obs).astype(np.int32)
-        max_run = 0
-        run = 0
-        for g in gaps:
-            if g == 1:
-                run += 1
-                max_run = max(max_run, run)
-            else:
-                run = 0
-        if max_run > max_gap_weeks:
+        if _max_consecutive_false(bin_obs) > int(cfg.max_gap_windows):
             continue
 
         keep.append(pid)
 
+    if not keep:
+        return df.iloc[0:0].copy()
+
     return df.loc[df.index.get_level_values(0).isin(keep)].copy()
+
+
+# -----------------------------
+# Public API
+# -----------------------------
+
+class FilterHistory:
+    """
+    Public API wrapper, symmetric with ct.datasets.history.BuildHistory.
+
+    Usage:
+      fh = FilterHistory(history_df, filtering_cfg=config["filtering"])
+      filtered_df = fh.run()
+    """
+
+    def __init__(self, history_df: pd.DataFrame, filtering_cfg: Optional[Dict[str, Any]] = None):
+        self.history_df = history_df.copy()
+        self.cfg = _load_filtering_config(filtering_cfg)
+
+    def run(self) -> pd.DataFrame:
+        df = _ensure_history_index(self.history_df, self.cfg.time_bin_col)
+
+        if self.cfg.densify:
+            df = densify_bin_grid_ffill_scores(df, self.cfg.time_bin_col)
+
+        df = filter_patients_by_config(df, self.cfg)
+
+        if not self.cfg.keep_obs_cols:
+            obs_cols = [c for c in df.columns if c.startswith("obs_domain_")]
+            if obs_cols:
+                df = df.drop(columns=obs_cols)
+
+        return df

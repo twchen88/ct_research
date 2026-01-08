@@ -2,6 +2,6 @@
 Building dataset for model training and evaluation.
 """
 
-from . import featurization, filtering, history
+from . import build_dataset, featurization, filtering, history
 
-__all__ = ["history", "featurization", "filtering"]
+__all__ = ["build_dataset", "history", "featurization", "filtering"]
