@@ -1,0 +1,58 @@
+metadata:
+  schema_version: 2
+  name: "Quick dataset test"
+  notes: "Fast sanity test for build_dataset() using at most 200 raw rows."
+
+logging:
+  level: INFO
+
+input:
+  filename: "raw_data.csv"
+  max_rows: 200     # <-- test-only: builder should read only first 200 rows
+
+input_schema:
+  id_col: patient_id
+  time_col: start_time
+  paired_lists:
+    - category_col: domain_ids
+      category_dtype: "int32"
+      value_col: domain_scores
+      value_dtype: "float32"
+      sep: ","
+
+history:
+  aggregate_window: "1W"
+  time_bin_col: step_index
+  step_index_base: 0
+  time_bin_alignment: "floor"
+  time_index_mode: "per_patient"
+  aggregation_method: "average"
+  forward_fill: true
+  frequency_calculation: "count"
+  missing_encoding: "00"
+
+# Make filtering permissive so tiny samples don't get wiped out
+filtering:
+  max_gap_windows: 999
+  min_history_windows: 1
+  min_active_windows: 1
+
+featurization:
+  scaling_method: "none"   # fastest + avoids edge cases on tiny samples
+  scaling_scope: "global"
+
+output_schema:
+  storage:
+    index_representation: columns
+  id_col: patient_id
+  time_col: step_index
+  features:
+    selection: by_prefix
+    prefixes: ["score_domain_", "freq_domain_", "inv_domain_"]
+  masks:
+    selection: by_prefix
+    prefixes: ["obs_domain_"]
+
+output:
+  format: "csv"           # csv is fastest + lowest dependency surface for a quick test
+  filename: "dataset_quick_test.csv"
